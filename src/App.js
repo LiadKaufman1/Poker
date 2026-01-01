@@ -1,96 +1,133 @@
 import React, { useState, useEffect } from 'react';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
-import { createDefaultGameSettings } from './utils/settlementLogic';
 import './index.css';
 
+// שימוש ב-localStorage עם polling לסנכרון
 function App() {
-  const [gameState, setGameState] = useState('lobby'); // 'lobby' | 'game'
+  const [gameState, setGameState] = useState('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
-  const [players, setPlayers] = useState([]);
-  const [gameSettings, setGameSettings] = useState(createDefaultGameSettings());
+  const [room, setRoom] = useState(null);
 
-  // Load saved game state from localStorage
-  useEffect(() => {
-    const savedState = localStorage.getItem('pokerSettlerState');
-    if (savedState) {
-      try {
-        const parsed = JSON.parse(savedState);
-        setGameState(parsed.gameState || 'lobby');
-        setRoomCode(parsed.roomCode || '');
-        setPlayerName(parsed.playerName || '');
-        setPlayers(parsed.players || []);
-        setGameSettings(parsed.gameSettings || createDefaultGameSettings());
-      } catch (error) {
-        console.error('Error loading saved state:', error);
-      }
-    }
-  }, []);
-
-  // Save game state to localStorage
-  useEffect(() => {
-    const stateToSave = {
-      gameState,
-      roomCode,
-      playerName,
-      players,
-      gameSettings
+  // פונקציה לשמירה ב-localStorage עם timestamp
+  const saveRoomData = (roomCode, roomData) => {
+    const data = {
+      ...roomData,
+      lastUpdated: Date.now()
     };
-    localStorage.setItem('pokerSettlerState', JSON.stringify(stateToSave));
-  }, [gameState, roomCode, playerName, players, gameSettings]);
-
-  const handleCreateGame = (newRoomCode, newPlayerName) => {
-    const newPlayer = {
-      name: newPlayerName,
-      buyIns: [],
-      cashOut: undefined
-    };
-
-    setRoomCode(newRoomCode);
-    setPlayerName(newPlayerName);
-    setPlayers([newPlayer]);
-    setGameSettings(createDefaultGameSettings());
-    setGameState('game');
+    localStorage.setItem(`poker-room-${roomCode}`, JSON.stringify(data));
   };
 
-  const handleJoinGame = (existingRoomCode, newPlayerName) => {
-    // בגרסה פשוטה, נוסיף את השחקן לרשימה המקומית
-    // בגרסה מלאה זה יהיה דרך Socket.io
-    const existingPlayer = players.find(p => p.name === newPlayerName);
-    
-    if (existingPlayer) {
-      // שחקן קיים - פשוט מתחבר
-      setRoomCode(existingRoomCode);
-      setPlayerName(newPlayerName);
-      setGameState('game');
-    } else {
-      // שחקן חדש
-      const newPlayer = {
+  // פונקציה לטעינת נתוני חדר
+  const loadRoomData = (roomCode) => {
+    const data = localStorage.getItem(`poker-room-${roomCode}`);
+    return data ? JSON.parse(data) : null;
+  };
+
+  // polling לעדכונים כל שנייה
+  useEffect(() => {
+    if (gameState === 'game' && roomCode) {
+      const interval = setInterval(() => {
+        const updatedRoom = loadRoomData(roomCode);
+        if (updatedRoom && updatedRoom.lastUpdated > (room?.lastUpdated || 0)) {
+          setRoom(updatedRoom);
+        }
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [gameState, roomCode, room?.lastUpdated]);
+
+  const generateRoomCode = () => {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  const handleCreateGame = (newPlayerName) => {
+    const newRoomCode = generateRoomCode();
+    const newRoom = {
+      code: newRoomCode,
+      players: [{
         name: newPlayerName,
         buyIns: [],
         cashOut: undefined
-      };
+      }],
+      gameSettings: {
+        chipRatio: { shekel: 1, chips: 1 }
+      },
+      lastUpdated: Date.now()
+    };
+    
+    setRoomCode(newRoomCode);
+    setPlayerName(newPlayerName);
+    setRoom(newRoom);
+    setGameState('game');
+    saveRoomData(newRoomCode, newRoom);
+  };
 
-      setRoomCode(existingRoomCode);
-      setPlayerName(newPlayerName);
-      setPlayers(prev => [...prev, newPlayer]);
-      setGameState('game');
+  const handleJoinGame = (existingRoomCode, newPlayerName) => {
+    let existingRoom = loadRoomData(existingRoomCode);
+    
+    if (!existingRoom) {
+      // יצירת חדר חדש אם לא קיים
+      existingRoom = {
+        code: existingRoomCode,
+        players: [],
+        gameSettings: {
+          chipRatio: { shekel: 1, chips: 1 }
+        },
+        lastUpdated: Date.now()
+      };
     }
+
+    // בדיקה אם השחקן כבר קיים
+    const existingPlayer = existingRoom.players.find(p => p.name === newPlayerName);
+    
+    if (!existingPlayer) {
+      existingRoom.players.push({
+        name: newPlayerName,
+        buyIns: [],
+        cashOut: undefined
+      });
+    }
+
+    existingRoom.lastUpdated = Date.now();
+    
+    setRoomCode(existingRoomCode);
+    setPlayerName(newPlayerName);
+    setRoom(existingRoom);
+    setGameState('game');
+    saveRoomData(existingRoomCode, existingRoom);
   };
 
   const handleUpdatePlayer = (playerNameToUpdate, updates) => {
-    setPlayers(prev => 
-      prev.map(player => 
+    if (!room) return;
+    
+    const updatedRoom = {
+      ...room,
+      players: room.players.map(player => 
         player.name === playerNameToUpdate 
           ? { ...player, ...updates }
           : player
-      )
-    );
+      ),
+      lastUpdated: Date.now()
+    };
+    
+    setRoom(updatedRoom);
+    saveRoomData(roomCode, updatedRoom);
   };
 
   const handleUpdateGameSettings = (newSettings) => {
-    setGameSettings(prev => ({ ...prev, ...newSettings }));
+    if (!room) return;
+    
+    const updatedRoom = {
+      ...room,
+      gameSettings: { ...room.gameSettings, ...newSettings },
+      lastUpdated: Date.now()
+    };
+    
+    setRoom(updatedRoom);
+    saveRoomData(roomCode, updatedRoom);
   };
 
   const handleLeaveGame = () => {
@@ -107,16 +144,20 @@ function App() {
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
         />
-      ) : (
+      ) : room ? (
         <GameRoom
           roomCode={roomCode}
           playerName={playerName}
-          players={players}
-          gameSettings={gameSettings}
+          players={room.players}
+          gameSettings={room.gameSettings}
           onUpdatePlayer={handleUpdatePlayer}
           onUpdateGameSettings={handleUpdateGameSettings}
           onLeaveGame={handleLeaveGame}
         />
+      ) : (
+        <div className="min-h-screen text-white flex items-center justify-center">
+          <p>טוען...</p>
+        </div>
       )}
     </div>
   );

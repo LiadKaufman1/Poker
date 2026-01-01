@@ -12,9 +12,8 @@ const Lobby = ({ onJoinGame, onCreateGame }) => {
       return;
     }
     
-    const newRoomCode = generateRoomCode();
     setIsCreating(true);
-    onCreateGame(newRoomCode, playerName.trim());
+    onCreateGame(playerName.trim());
   };
 
   const handleJoinGame = () => {
