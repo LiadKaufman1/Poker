@@ -33,7 +33,18 @@ function App() {
     socket.on('room-updated', (updatedRoom) => {
       setRoom(updatedRoom);
       // תיקון: אם אנחנו מקבלים עדכון חדר ועדיין בלובי, סימן שהצטרפנו בהצלחה
-      setGameState(currentState => currentState === 'lobby' ? 'game' : currentState);
+      setGameState(currentState => {
+        if (currentState === 'lobby') {
+          // שומרים נתונים לחיבור מחדש
+          localStorage.setItem('poker_current_room', updatedRoom.code);
+          const currentPlayer = updatedRoom.players.find(p => p.id === socket.id);
+          if (currentPlayer) {
+            localStorage.setItem('poker_player_name', currentPlayer.name);
+          }
+          return 'game';
+        }
+        return currentState;
+      });
     });
 
     socket.on('error', (errMsg) => {
@@ -53,8 +64,21 @@ function App() {
     // בדיקה אם יש קוד חדר ב-URL
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
+
     if (roomParam) {
       setRoomCode(roomParam);
+    } else {
+      // אם אין ב-URL, בודקים אם יש חיבור פעיל ב-LocalStorage
+      const savedRoom = localStorage.getItem('poker_current_room');
+      const savedName = localStorage.getItem('poker_player_name');
+
+      if (savedRoom && savedName) {
+        setRoomCode(savedRoom);
+        setPlayerName(savedName);
+        console.log('Attemping auto-reconnect to', savedRoom);
+        const adminSecret = localStorage.getItem(`poker_admin_${savedRoom}`);
+        socket.emit('join-room', { roomCode: savedRoom, playerName: savedName, adminSecret });
+      }
     }
   }, []);
 
@@ -82,6 +106,8 @@ function App() {
     setRoomCode('');
     setPlayerName('');
     setRoom(null);
+    localStorage.removeItem('poker_current_room');
+    localStorage.removeItem('poker_player_name');
     // אופציונלי: לשלוח אירוע עזיבה לשרת אם רוצים
   };
 
