@@ -9,6 +9,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
   const [settlement, setSettlement] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [chipRatio, setChipRatio] = useState(gameSettings.chipRatio);
+  const [managingPlayerId, setManagingPlayerId] = useState(null); // Track which player admin is editing
+  const [adminBuyInType, setAdminBuyInType] = useState({}); // Track buy-in type preference per player { "PlayerName": "cash" | "bit" }
 
   const currentPlayer = players.find(p => p.name === playerName);
 
