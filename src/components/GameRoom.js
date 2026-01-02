@@ -497,9 +497,9 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                         <div key={index} className="bg-gray-700 p-4 rounded">
                           <div className="flex justify-between items-center mb-2">
                             <div>
-                              <span className="font-medium text-red-400">{transaction.from}</span>
+                              <span className="font-medium text-green-400">{transaction.from}</span>
                               <span className="mx-2">→</span>
-                              <span className="font-medium text-green-400">{transaction.to}</span>
+                              <span className="font-medium text-red-400">{transaction.to}</span>
                             </div>
                             <span className="font-bold text-lg">₪{transaction.amount}</span>
                           </div>
