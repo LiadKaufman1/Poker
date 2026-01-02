@@ -79,8 +79,11 @@ io.on('connection', (socket) => {
 
   // Google Login Handler
   socket.on('login-google', async (token) => {
+    console.log('Received login-google event');
     const payload = await verifyGoogleToken(token);
+
     if (payload) {
+      console.log('Token verified for:', payload.name);
       const { sub: googleId, email, name, picture } = payload;
 
       try {
@@ -95,24 +98,28 @@ io.on('connection', (socket) => {
           user.picture = picture;
           user.name = name;
           await user.save();
+          console.log('User updated:', name);
         }
 
         // Tag socket with user info for later stats tracking
         socket.user = { _id: user._id, googleId, name };
 
         // Send back profile and stats
-        socket.emit('login-success', {
+        const responseData = {
           _id: user._id,
           name: user.name,
           picture: user.picture,
           stats: user.stats
-        });
+        };
+        console.log('Sending login-success to socket:', socket.id);
+        socket.emit('login-success', responseData);
 
       } catch (err) {
         console.error('Database error during login:', err);
-        socket.emit('error', 'Login failed');
+        socket.emit('error', 'Login failed: Database error');
       }
     } else {
+      console.error('Token verification failed');
       socket.emit('error', 'Invalid Google Token');
     }
   });
