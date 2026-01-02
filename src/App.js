@@ -118,6 +118,7 @@ function App() {
 
   const handleJoinGame = (existingRoomCode, newPlayerName) => {
     setPlayerName(newPlayerName);
+    setRoomCode(existingRoomCode); // Fix: Ensure state is updated so GameRoom receives it
     const adminSecret = localStorage.getItem(`poker_admin_${existingRoomCode}`);
     socket.emit('join-room', { roomCode: existingRoomCode, playerName: newPlayerName, adminSecret });
   };
