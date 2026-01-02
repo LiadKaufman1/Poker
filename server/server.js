@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
 
       } catch (err) {
         console.error('Database error during login:', err);
-        socket.emit('error', 'Login failed: Database error');
+        socket.emit('error', 'Login failed: ' + err.message);
       }
     } else {
       console.error('Token verification failed');

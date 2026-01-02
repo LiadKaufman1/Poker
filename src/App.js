@@ -57,8 +57,8 @@ function App() {
 
     socket.on('error', (errMsg) => {
       setError(errMsg);
-      // אחרי 3 שניות מנקים את השגיאה
-      setTimeout(() => setError(''), 3000);
+      // אחרי 10 שניות מנקים את השגיאה
+      setTimeout(() => setError(''), 10000);
     });
 
     socket.on('stats-update', (stats) => {
