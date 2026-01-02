@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
 import './index.css';
@@ -8,6 +9,9 @@ import './index.css';
 const SOCKET_URL = 'https://poker-newnew.onrender.com';
 const socket = io(SOCKET_URL);
 
+// Google Client ID
+const GOOGLE_CLIENT_ID = '123250047088-jllcujs59cej75f3u16s3jgmmovsp663.apps.googleusercontent.com';
+
 function App() {
   const [gameState, setGameState] = useState('lobby');
   const [roomCode, setRoomCode] = useState('');
@@ -15,6 +19,9 @@ function App() {
   const [room, setRoom] = useState(null);
   const [error, setError] = useState('');
   const [serverStats, setServerStats] = useState({ activeRooms: 0, totalRoomsCreated: 0 });
+
+  // User Authentication State
+  const [user, setUser] = useState(null); // { _id, name, picture, stats }
 
   useEffect(() => {
     // מאזינים לאירועים מהשרת
@@ -56,6 +63,11 @@ function App() {
 
     socket.on('stats-update', (stats) => {
       setServerStats(stats);
+    });
+
+    socket.on('login-success', (userData) => {
+      setUser(userData);
+      localStorage.setItem('poker_user_token', 'logged_in'); // Simple flag, real token logic handled via Google Button
     });
 
     socket.on('room-closed', () => {
@@ -147,38 +159,42 @@ function App() {
 
   // בדיוק כפי שהיה, רק עם טיפול בשגיאות
   return (
-    <div className="App relative">
-      {error && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
-          {error}
-        </div>
-      )}
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <div className="App relative bg-gray-900 min-h-screen font-sans text-right" dir="rtl">
+        {error && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
+            {error}
+          </div>
+        )}
 
-      {gameState === 'lobby' ? (
-        <Lobby
-          onCreateGame={handleCreateGame}
-          onJoinGame={handleJoinGame}
-          initialRoomCode={roomCode}
-          stats={serverStats}
-        />
-      ) : room ? (
-        <GameRoom
-          roomCode={roomCode}
-          playerName={playerName}
-          isAdmin={room.adminId === socket.id}
-          adminId={room.adminId}
-          players={room.players}
-          gameSettings={room.gameSettings}
-          onUpdatePlayer={handleUpdatePlayer}
-          onUpdateGameSettings={handleUpdateGameSettings}
-          onLeaveGame={handleLeaveGame}
-        />
-      ) : (
-        <div className="min-h-screen text-white flex items-center justify-center">
-          <p>טוען...</p>
-        </div>
-      )}
-    </div>
+        {gameState === 'lobby' ? (
+          <Lobby
+            onCreateGame={handleCreateGame}
+            onJoinGame={handleJoinGame}
+            initialRoomCode={roomCode}
+            stats={serverStats}
+            user={user}
+            socket={socket}
+          />
+        ) : room ? (
+          <GameRoom
+            roomCode={roomCode}
+            playerName={playerName}
+            isAdmin={room.adminId === socket.id}
+            adminId={room.adminId}
+            players={room.players}
+            gameSettings={room.gameSettings}
+            onUpdatePlayer={handleUpdatePlayer}
+            onUpdateGameSettings={handleUpdateGameSettings}
+            onLeaveGame={handleLeaveGame}
+          />
+        ) : (
+          <div className="min-h-screen text-white flex items-center justify-center">
+            <p>טוען...</p>
+          </div>
+        )}
+      </div>
+    </GoogleOAuthProvider>
   );
 }
 

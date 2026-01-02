@@ -36,6 +36,22 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+async function verifyGoogleToken(token) {
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID || '123250047088-jllcujs59cej75f3u16s3jgmmovsp663.apps.googleusercontent.com',
+    });
+    return ticket.getPayload();
+  } catch (error) {
+    console.error('Error verifying Google token:', error);
+    return null;
+  }
+}
+
 app.get('/', (req, res) => {
   res.send('Poker Server is running');
 });
@@ -57,6 +73,46 @@ io.on('connection', (socket) => {
   socket.emit('stats-update', {
     activeRooms: rooms.size,
     totalRoomsCreated
+  });
+
+  // Google Login Handler
+  socket.on('login-google', async (token) => {
+    const payload = await verifyGoogleToken(token);
+    if (payload) {
+      const { sub: googleId, email, name, picture } = payload;
+
+      try {
+        let user = await User.findOne({ googleId });
+
+        if (!user) {
+          user = new User({ googleId, email, name, picture });
+          await user.save();
+          console.log('New user created:', name);
+        } else {
+          // Update picture/name if changed
+          user.picture = picture;
+          user.name = name;
+          await user.save();
+        }
+
+        // Tag socket with user info for later stats tracking
+        socket.user = { _id: user._id, googleId, name };
+
+        // Send back profile and stats
+        socket.emit('login-success', {
+          _id: user._id,
+          name: user.name,
+          picture: user.picture,
+          stats: user.stats
+        });
+
+      } catch (err) {
+        console.error('Database error during login:', err);
+        socket.emit('error', 'Login failed');
+      }
+    } else {
+      socket.emit('error', 'Invalid Google Token');
+    }
   });
 
   // יצירת חדר חדש
