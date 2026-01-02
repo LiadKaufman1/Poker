@@ -27,6 +27,8 @@ function App() {
 
     socket.on('room-updated', (updatedRoom) => {
       setRoom(updatedRoom);
+      // תיקון: אם אנחנו מקבלים עדכון חדר ועדיין בלובי, סימן שהצטרפנו בהצלחה
+      setGameState(currentState => currentState === 'lobby' ? 'game' : currentState);
     });
 
     socket.on('error', (errMsg) => {
@@ -40,6 +42,15 @@ function App() {
       socket.off('room-updated');
       socket.off('error');
     };
+  }, []);
+
+  useEffect(() => {
+    // בדיקה אם יש קוד חדר ב-URL
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      setRoomCode(roomParam);
+    }
   }, []);
 
   const handleCreateGame = (newPlayerName) => {
@@ -81,6 +92,7 @@ function App() {
         <Lobby
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
+          initialRoomCode={roomCode}
         />
       ) : room ? (
         <GameRoom

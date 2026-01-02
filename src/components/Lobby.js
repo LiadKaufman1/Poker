@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { generateRoomCode } from '../utils/settlementLogic';
 
-const Lobby = ({ onJoinGame, onCreateGame }) => {
-  const [roomCode, setRoomCode] = useState('');
+const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
+  const [roomCode, setRoomCode] = useState(initialRoomCode || '');
   const [playerName, setPlayerName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -11,7 +11,7 @@ const Lobby = ({ onJoinGame, onCreateGame }) => {
       alert('אנא הכנס שם שחקן');
       return;
     }
-    
+
     setIsCreating(true);
     onCreateGame(playerName.trim());
   };
@@ -21,12 +21,12 @@ const Lobby = ({ onJoinGame, onCreateGame }) => {
       alert('אנא הכנס שם שחקן');
       return;
     }
-    
+
     if (!roomCode.trim()) {
       alert('אנא הכנס קוד חדר');
       return;
     }
-    
+
     onJoinGame(roomCode.trim().toUpperCase(), playerName.trim());
   };
 

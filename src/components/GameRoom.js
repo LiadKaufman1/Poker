@@ -82,6 +82,15 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
           </div>
           <div className="flex flex-col gap-2">
             <button
+              onClick={() => {
+                const url = `${window.location.protocol}//${window.location.host}?room=${roomCode}`;
+                navigator.clipboard.writeText(url).then(() => alert('הקישור הועתק!'));
+              }}
+              className="bg-blue-600/80 hover:bg-blue-700/80 px-3 py-2 rounded text-sm backdrop-blur-sm mb-1"
+            >
+              שתף חדר
+            </button>
+            <button
               onClick={() => setShowSettings(true)}
               className="bg-gray-600/80 hover:bg-gray-700/80 px-3 py-2 rounded text-sm backdrop-blur-sm"
             >
@@ -101,31 +110,29 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
             {/* Buy-in Section */}
             <div className="card mb-6">
               <h2 className="text-lg font-semibold mb-4">Buy-in</h2>
-              
+
               {/* בחירת סוג תשלום */}
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setBuyInType('cash')}
-                  className={`flex-1 py-2 px-4 rounded font-medium ${
-                    buyInType === 'cash' 
-                      ? 'bg-green-600 text-white' 
+                  className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'cash'
+                      ? 'bg-green-600 text-white'
                       : 'bg-gray-700 text-gray-300'
-                  }`}
+                    }`}
                 >
                   מזומן
                 </button>
                 <button
                   onClick={() => setBuyInType('bit')}
-                  className={`flex-1 py-2 px-4 rounded font-medium ${
-                    buyInType === 'bit' 
-                      ? 'bg-blue-600 text-white' 
+                  className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'bit'
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-700 text-gray-300'
-                  }`}
+                    }`}
                 >
                   BIT
                 </button>
               </div>
-              
+
               <div className="flex gap-2 mb-4">
                 <input
                   type="number"
@@ -141,7 +148,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                   הוסף
                 </button>
               </div>
-              
+
               {currentPlayer && currentPlayer.buyIns && (
                 <div className="text-sm">
                   <p className="text-gray-400 mb-2">Buy-ins שלך:</p>
@@ -149,9 +156,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     {currentPlayer.buyIns.map((buyIn, index) => (
                       <div key={index} className="flex justify-between items-center bg-gray-700 px-2 py-1 rounded">
                         <span>₪{buyIn.amount}</span>
-                        <span className={`text-xs px-2 py-1 rounded ${
-                          buyIn.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
-                        }`}>
+                        <span className={`text-xs px-2 py-1 rounded ${buyIn.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
+                          }`}>
                           {buyIn.type === 'cash' ? 'מזומן' : 'BIT'}
                         </span>
                       </div>
@@ -186,7 +192,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                   עדכן
                 </button>
               </div>
-              
+
               {currentPlayer && currentPlayer.cashOut !== undefined && (
                 <div className="text-sm bg-gray-700 p-2 rounded">
                   <p>צ'יפים: <span className="font-semibold">{currentPlayer.cashOut}</span></p>
@@ -273,7 +279,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     />
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-700 p-3 rounded">
                   <p className="text-sm text-gray-300">
                     דוגמה: ₪{chipRatio.shekel} = {chipRatio.chips} צ'יפים
@@ -338,9 +344,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-300">אופן תשלום:</span>
-                            <span className={`text-xs px-2 py-1 rounded ${
-                              transaction.paymentMethod.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
-                            }`}>
+                            <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
+                              }`}>
                               {transaction.paymentMethod.description}
                             </span>
                           </div>
