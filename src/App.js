@@ -1,144 +1,82 @@
 import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
 import './index.css';
 
-// שימוש ב-localStorage עם polling לסנכרון
+// חיבור לשרת - ניתן לשנות את ה-URL לפי הצורך (בפרודקשן צריך להיות הכתובת האמיתית)
+const SOCKET_URL = 'http://localhost:3001';
+const socket = io(SOCKET_URL);
+
 function App() {
   const [gameState, setGameState] = useState('lobby');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [room, setRoom] = useState(null);
+  const [error, setError] = useState('');
 
-  // פונקציה לשמירה ב-localStorage עם timestamp
-  const saveRoomData = (roomCode, roomData) => {
-    const data = {
-      ...roomData,
-      lastUpdated: Date.now()
-    };
-    localStorage.setItem(`poker-room-${roomCode}`, JSON.stringify(data));
-  };
-
-  // פונקציה לטעינת נתוני חדר
-  const loadRoomData = (roomCode) => {
-    const data = localStorage.getItem(`poker-room-${roomCode}`);
-    return data ? JSON.parse(data) : null;
-  };
-
-  // polling לעדכונים כל שנייה
   useEffect(() => {
-    if (gameState === 'game' && roomCode) {
-      const interval = setInterval(() => {
-        const updatedRoom = loadRoomData(roomCode);
-        if (updatedRoom && updatedRoom.lastUpdated > (room?.lastUpdated || 0)) {
-          setRoom(updatedRoom);
-        }
-      }, 1000);
+    // מאזינים לאירועים מהשרת
 
-      return () => clearInterval(interval);
-    }
-  }, [gameState, roomCode, room?.lastUpdated]);
+    socket.on('room-created', ({ roomCode, room }) => {
+      setRoomCode(roomCode);
+      setRoom(room);
+      setGameState('game');
+      setError('');
+    });
 
-  const generateRoomCode = () => {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  };
+    socket.on('room-updated', (updatedRoom) => {
+      setRoom(updatedRoom);
+    });
+
+    socket.on('error', (errMsg) => {
+      setError(errMsg);
+      // אחרי 3 שניות מנקים את השגיאה
+      setTimeout(() => setError(''), 3000);
+    });
+
+    return () => {
+      socket.off('room-created');
+      socket.off('room-updated');
+      socket.off('error');
+    };
+  }, []);
 
   const handleCreateGame = (newPlayerName) => {
-    const newRoomCode = generateRoomCode();
-    const newRoom = {
-      code: newRoomCode,
-      players: [{
-        name: newPlayerName,
-        buyIns: [],
-        cashOut: undefined
-      }],
-      gameSettings: {
-        chipRatio: { shekel: 1, chips: 1 }
-      },
-      lastUpdated: Date.now()
-    };
-    
-    setRoomCode(newRoomCode);
     setPlayerName(newPlayerName);
-    setRoom(newRoom);
-    setGameState('game');
-    saveRoomData(newRoomCode, newRoom);
+    socket.emit('create-room', newPlayerName);
   };
 
   const handleJoinGame = (existingRoomCode, newPlayerName) => {
-    let existingRoom = loadRoomData(existingRoomCode);
-    
-    if (!existingRoom) {
-      // יצירת חדר חדש אם לא קיים
-      existingRoom = {
-        code: existingRoomCode,
-        players: [],
-        gameSettings: {
-          chipRatio: { shekel: 1, chips: 1 }
-        },
-        lastUpdated: Date.now()
-      };
-    }
-
-    // בדיקה אם השחקן כבר קיים
-    const existingPlayer = existingRoom.players.find(p => p.name === newPlayerName);
-    
-    if (!existingPlayer) {
-      existingRoom.players.push({
-        name: newPlayerName,
-        buyIns: [],
-        cashOut: undefined
-      });
-    }
-
-    existingRoom.lastUpdated = Date.now();
-    
-    setRoomCode(existingRoomCode);
     setPlayerName(newPlayerName);
-    setRoom(existingRoom);
-    setGameState('game');
-    saveRoomData(existingRoomCode, existingRoom);
+    socket.emit('join-room', { roomCode: existingRoomCode, playerName: newPlayerName });
   };
 
   const handleUpdatePlayer = (playerNameToUpdate, updates) => {
-    if (!room) return;
-    
-    const updatedRoom = {
-      ...room,
-      players: room.players.map(player => 
-        player.name === playerNameToUpdate 
-          ? { ...player, ...updates }
-          : player
-      ),
-      lastUpdated: Date.now()
-    };
-    
-    setRoom(updatedRoom);
-    saveRoomData(roomCode, updatedRoom);
+    socket.emit('update-player', { playerName: playerNameToUpdate, updates });
   };
 
   const handleUpdateGameSettings = (newSettings) => {
-    if (!room) return;
-    
-    const updatedRoom = {
-      ...room,
-      gameSettings: { ...room.gameSettings, ...newSettings },
-      lastUpdated: Date.now()
-    };
-    
-    setRoom(updatedRoom);
-    saveRoomData(roomCode, updatedRoom);
+    socket.emit('update-game-settings', newSettings);
   };
 
   const handleLeaveGame = () => {
     setGameState('lobby');
     setRoomCode('');
     setPlayerName('');
-    // לא מוחקים את השחקנים כדי לאפשר חזרה
+    setRoom(null);
+    // אופציונלי: לשלוח אירוע עזיבה לשרת אם רוצים
   };
 
+  // בדיוק כפי שהיה, רק עם טיפול בשגיאות
   return (
-    <div className="App">
+    <div className="App relative">
+      {error && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded shadow-lg z-50">
+          {error}
+        </div>
+      )}
+      
       {gameState === 'lobby' ? (
         <Lobby 
           onCreateGame={handleCreateGame}
