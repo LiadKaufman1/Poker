@@ -125,7 +125,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     : 'bg-gray-700 text-gray-300'
                     }`}
                 >
-                  מזומן
+                  BIT
                 </button>
                 <button
                   type="button"
@@ -135,7 +135,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     : 'bg-gray-700 text-gray-300'
                     }`}
                 >
-                  BIT
+                  מזומן
                 </button>
               </div>
 
@@ -164,7 +164,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                         <span>₪{buyIn.amount}</span>
                         <span className={`text-xs px-2 py-1 rounded ${buyIn.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
                           }`}>
-                          {buyIn.type === 'cash' ? 'מזומן' : 'BIT'}
+                          {buyIn.type === 'cash' ? 'BIT' : 'מזומן'}
                         </span>
                       </div>
                     ))}
@@ -172,8 +172,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                   <div className="mt-3 p-2 bg-gray-700 rounded">
                     <p className="font-semibold">סה"כ: ₪{getTotalBuyIn(currentPlayer)}</p>
                     <div className="text-xs text-gray-300 mt-1">
-                      <span>מזומן: ₪{getBuyInsByType(currentPlayer, 'cash')}</span>
-                      <span className="ml-3">BIT: ₪{getBuyInsByType(currentPlayer, 'bit')}</span>
+                      <span>BIT: ₪{getBuyInsByType(currentPlayer, 'cash')}</span>
+                      <span className="ml-3">מזומן: ₪{getBuyInsByType(currentPlayer, 'bit')}</span>
                     </div>
                   </div>
                 </div>
@@ -227,8 +227,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
 
                     <div className="text-xs text-gray-400 flex justify-between mb-2">
                       <div>
-                        <span>מזומן: ₪{getBuyInsByType(player, 'cash')}</span>
-                        <span className="ml-2">BIT: ₪{getBuyInsByType(player, 'bit')}</span>
+                        <span>BIT: ₪{getBuyInsByType(player, 'cash')}</span>
+                        <span className="ml-2">מזומן: ₪{getBuyInsByType(player, 'bit')}</span>
                       </div>
                       {player.cashOut !== undefined && (
                         <span>
@@ -264,14 +264,14 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                                   onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'cash' }))}
                                   className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'cash' || !adminBuyInType[player.name] ? 'bg-green-600' : 'bg-gray-600'}`}
                                 >
-                                  מזומן
+                                  BIT
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'bit' }))}
                                   className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'bit' ? 'bg-blue-600' : 'bg-gray-600'}`}
                                 >
-                                  BIT
+                                  מזומן
                                 </button>
                               </div>
                               <div className="flex gap-1">
@@ -310,7 +310,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                                 <div className="space-y-1 max-h-32 overflow-y-auto">
                                   {player.buyIns.map((bi, i) => (
                                     <div key={i} className="flex justify-between items-center bg-gray-700 px-2 py-1 rounded text-xs">
-                                      <span>₪{bi.amount} ({bi.type === 'cash' ? 'מזומן' : 'BIT'})</span>
+                                      <span>₪{bi.amount} ({bi.type === 'cash' ? 'BIT' : 'מזומן'})</span>
                                       <button
                                         onClick={() => {
                                           if (window.confirm('למחוק רשומה זו?')) {
