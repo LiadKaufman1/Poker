@@ -37,17 +37,19 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 
 const { OAuth2Client } = require('google-auth-library');
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Hardcoding the ID for certainty during debug
+const CLIENT_ID = '123250047088-jllcujs59cej75f3u16s3jgmmovsp663.apps.googleusercontent.com';
+const client = new OAuth2Client(CLIENT_ID);
 
 async function verifyGoogleToken(token) {
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID || '123250047088-jllcujs59cej75f3u16s3jgmmovsp663.apps.googleusercontent.com',
+      audience: CLIENT_ID,
     });
     return ticket.getPayload();
   } catch (error) {
-    console.error('Error verifying Google token:', error);
+    console.error('Error verifying Google token:', error.message);
     return null;
   }
 }
