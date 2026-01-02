@@ -70,15 +70,17 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
     <div className="min-h-screen text-white p-4">
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="glass-effect rounded-lg p-4 flex-1 mr-2">
-            <h1 className="text-2xl font-bold text-poker-green-400 drop-shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <div className="glass-effect rounded-lg p-2 flex-1 mr-2">
+            <h1 className="text-xl font-bold text-poker-green-400 drop-shadow-lg leading-tight">
               חדר: {roomCode}
             </h1>
-            <p className="text-gray-300">שחקן: {playerName}</p>
-            <p className="text-xs text-gray-400">
-              יחס: ₪{gameSettings.chipRatio.shekel} = {gameSettings.chipRatio.chips} צ'יפים
-            </p>
+            <div className="flex justify-between items-end mt-1">
+              <span className="text-gray-200 text-lg font-medium">{playerName}</span>
+              <span className="text-sm text-gray-400 ml-2">
+                ₪{gameSettings.chipRatio.shekel} = {gameSettings.chipRatio.chips}
+              </span>
+            </div>
           </div>
           <div className="flex flex-col gap-2">
             <button
@@ -345,7 +347,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-300">אופן תשלום:</span>
                             <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
-                                transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
+                              transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
                               }`}>
                               {transaction.paymentMethod.description}
                             </span>

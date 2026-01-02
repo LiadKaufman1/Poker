@@ -97,6 +97,9 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
           </div>
         </div>
       </div>
+      <footer className="text-center p-4 text-gray-400 text-lg mt-12">
+        <p>פותח על ידי Liad Kaufman</p>
+      </footer>
     </div>
   );
 };
