@@ -139,26 +139,84 @@ io.on('connection', (socket) => {
     }
   });
 
-  // התנתקות
-  socket.on('disconnect', () => {
-    console.log('שחקן התנתק:', socket.id);
+  // סגירת חדר (על ידי מנהל)
+  socket.on('close-room', () => {
+    const roomCode = socket.roomCode;
+    const room = rooms.get(roomCode);
 
-    if (socket.roomCode) {
-      const room = rooms.get(socket.roomCode);
-      if (room) {
-        // לא מוחקים את השחקן, רק מעדכנים שהוא לא מחובר
-        const player = room.players.find(p => p.id === socket.id);
-        if (player) {
-          player.id = null; // מסמן שהשחקן לא מחובר
+    if (room && room.adminId === socket.id) {
+      // Notify all players in the room
+      io.to(roomCode).emit('room-closed');
+
+      // Clear socket room associations
+      const clients = io.sockets.adapter.rooms.get(roomCode);
+      if (clients) {
+        for (const clientId of clients) {
+          const clientSocket = io.sockets.sockets.get(clientId);
+          if (clientSocket) {
+            clientSocket.leave(roomCode);
+            clientSocket.roomCode = null;
+          }
         }
+      }
 
-        io.to(socket.roomCode).emit('room-updated', room);
+      // Delete the room
+      rooms.delete(roomCode);
+      console.log(`Room ${roomCode} closed by admin`);
+
+      // Broadcast stats update
+      io.emit('stats-update', {
+        activeRooms: rooms.size,
+        totalRoomsCreated
+      });
+    }
+  });
+
+  // עזיבת שחקן (לא מנהל)
+  socket.on('leave-room', () => {
+    const roomCode = socket.roomCode;
+    const room = rooms.get(roomCode);
+
+    if (room) {
+      // Remove player
+      room.players = room.players.filter(p => p.id !== socket.id);
+
+      socket.leave(roomCode);
+      socket.roomCode = null;
+
+      if (room.players.length === 0) {
+        rooms.delete(roomCode);
+        io.emit('stats-update', {
+          activeRooms: rooms.size,
+          totalRoomsCreated
+        });
+      } else {
+        io.to(roomCode).emit('room-updated', room);
       }
     }
   });
-});
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Server רץ על פורט ${PORT}`);
-});
+  // התנתקות
+  socket.on('disconnect', () => {
+    socket.on('disconnect', () => {
+      console.log('שחקן התנתק:', socket.id);
+
+      if (socket.roomCode) {
+        const room = rooms.get(socket.roomCode);
+        if (room) {
+          // לא מוחקים את השחקן, רק מעדכנים שהוא לא מחובר
+          const player = room.players.find(p => p.id === socket.id);
+          if (player) {
+            player.id = null; // מסמן שהשחקן לא מחובר
+          }
+
+          io.to(socket.roomCode).emit('room-updated', room);
+        }
+      }
+    });
+  });
+
+  const PORT = process.env.PORT || 3001;
+  server.listen(PORT, () => {
+    console.log(`Server רץ על פורט ${PORT}`);
+  });

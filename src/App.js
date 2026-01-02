@@ -58,11 +58,22 @@ function App() {
       setServerStats(stats);
     });
 
+    socket.on('room-closed', () => {
+      setGameState('lobby');
+      setRoomCode('');
+      setPlayerName('');
+      setRoom(null);
+      localStorage.removeItem('poker_current_room');
+      localStorage.removeItem('poker_player_name');
+      alert('החדר נסגר על ידי המנהל');
+    });
+
     return () => {
       socket.off('room-created');
       socket.off('room-updated');
       socket.off('error');
       socket.off('stats-update');
+      socket.off('room-closed');
     };
   }, []);
 
@@ -108,13 +119,30 @@ function App() {
   };
 
   const handleLeaveGame = () => {
-    setGameState('lobby');
-    setRoomCode('');
-    setPlayerName('');
-    setRoom(null);
-    localStorage.removeItem('poker_current_room');
-    localStorage.removeItem('poker_player_name');
-    // אופציונלי: לשלוח אירוע עזיבה לשרת אם רוצים
+    const isAdmin = room && room.adminId === socket.id;
+
+    if (isAdmin) {
+      if (window.confirm('האם אתה בטוח שברצונך לסגור את החדר לכולם?')) {
+        socket.emit('close-room');
+        // Client cleanup happens in 'room-closed' listener or immediately here
+        setGameState('lobby');
+        setRoomCode('');
+        setPlayerName('');
+        setRoom(null);
+        localStorage.removeItem('poker_current_room');
+        localStorage.removeItem('poker_player_name');
+      }
+    } else {
+      if (window.confirm('האם אתה בטוח שברצונך לעזוב את המשחק?')) {
+        socket.emit('leave-room');
+        setGameState('lobby');
+        setRoomCode('');
+        setPlayerName('');
+        setRoom(null);
+        localStorage.removeItem('poker_current_room');
+        localStorage.removeItem('poker_player_name');
+      }
+    }
   };
 
   // בדיוק כפי שהיה, רק עם טיפול בשגיאות
