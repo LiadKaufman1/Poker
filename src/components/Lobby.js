@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { generateRoomCode } from '../utils/settlementLogic';
 
-const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
+const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats }) => {
   const [roomCode, setRoomCode] = useState(initialRoomCode || '');
   const [playerName, setPlayerName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -44,6 +44,16 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
           <h1 className="text-4xl font-bold text-poker-green-400 mb-2 drop-shadow-lg text-center">
             ניהול משחקי פוקר ביתיים
           </h1>
+          {stats && (
+            <div className="flex justify-center gap-4 text-xs text-gray-400 mt-2">
+              <div className="bg-gray-800 px-3 py-1 rounded-full border border-gray-700">
+                סה"כ חדרים שנפתחו: <span className="text-white font-bold">{stats.totalRoomsCreated}</span>
+              </div>
+              <div className="bg-gray-800 px-3 py-1 rounded-full border border-gray-700">
+                חדרים פעילים כרגע: <span className="text-green-400 font-bold">{stats.activeRooms}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">

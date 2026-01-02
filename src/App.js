@@ -14,6 +14,7 @@ function App() {
   const [playerName, setPlayerName] = useState('');
   const [room, setRoom] = useState(null);
   const [error, setError] = useState('');
+  const [serverStats, setServerStats] = useState({ activeRooms: 0, totalRoomsCreated: 0 });
 
   useEffect(() => {
     // מאזינים לאירועים מהשרת
@@ -53,10 +54,15 @@ function App() {
       setTimeout(() => setError(''), 3000);
     });
 
+    socket.on('stats-update', (stats) => {
+      setServerStats(stats);
+    });
+
     return () => {
       socket.off('room-created');
       socket.off('room-updated');
       socket.off('error');
+      socket.off('stats-update');
     };
   }, []);
 
@@ -125,6 +131,7 @@ function App() {
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
           initialRoomCode={roomCode}
+          stats={serverStats}
         />
       ) : room ? (
         <GameRoom

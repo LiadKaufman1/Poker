@@ -28,8 +28,16 @@ function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+let totalRoomsCreated = 0;
+
 io.on('connection', (socket) => {
   console.log('שחקן התחבר:', socket.id);
+
+  // Send initial stats
+  socket.emit('stats-update', {
+    activeRooms: rooms.size,
+    totalRoomsCreated
+  });
 
   // יצירת חדר חדש
   socket.on('create-room', (playerName) => {
@@ -53,6 +61,14 @@ io.on('connection', (socket) => {
     rooms.set(roomCode, room);
     socket.join(roomCode);
     socket.roomCode = roomCode;
+
+    totalRoomsCreated++;
+
+    // Broadcast stats update to EVERYONE
+    io.emit('stats-update', {
+      activeRooms: rooms.size,
+      totalRoomsCreated
+    });
 
     // Send secret ONLY to the creator (in the callback/response)
     socket.emit('room-created', { roomCode, room, adminSecret });
