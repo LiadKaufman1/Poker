@@ -86,15 +86,21 @@ export const calculateSettlement = (players, gameSettings = { chipRatio: { sheke
 const calculateOptimalPayment = (payer, receiver, amount) => {
   // חישוב כמה כסף מזומן יש לכל אחד
   const payerCash = (payer.buyIns || []).filter(b => b.type === 'cash').reduce((sum, b) => sum + b.amount, 0);
-  const receiverCash = (receiver.buyIns || []).filter(b => b.type === 'cash').reduce((sum, b) => sum + b.amount, 0);
+  // הערה: receiverCash לא באמת משנה, כי המשלם משלם ממה שיש לו
 
-  // אם למשלם יש מספיק מזומן ולמקבל יש מזומן - עדיף מזומן
-  if (payerCash >= amount && receiverCash > 0) {
-    return { type: 'cash', description: 'מזומן' };
+  // אם למשלם יש מזומן, נשתמש בו קודם
+  // נניח שיש לו 100 מזומן והוא צריך לשלם 150.
+  // נשלם 100 במזומן ו-50 בביט.
+
+  if (payerCash >= amount) {
+    return { type: 'cash', description: `₪${amount} מזומן` };
+  } else if (payerCash > 0) {
+    const remaining = Math.round((amount - payerCash) * 100) / 100;
+    return { type: 'mixed', description: `₪${payerCash} מזומן, ₪${remaining} BIT` };
   }
 
-  // אחרת - BIT
-  return { type: 'bit', description: 'BIT' };
+  // אחרת - הכל BIT
+  return { type: 'bit', description: `₪${amount} BIT` };
 };
 /**
  * פונקציה לוולידציה של נתוני שחקן

@@ -41,12 +41,9 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
     <div className="min-h-screen text-white p-4">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-poker-green-400 mb-2 drop-shadow-lg">
-            PokerSettler
-          </h1>
-          <p className="text-gray-300 drop-shadow">
+          <h1 className="text-4xl font-bold text-poker-green-400 mb-2 drop-shadow-lg text-center">
             ניהול משחקי פוקר ביתיים
-          </p>
+          </h1>
         </div>
 
         <div className="space-y-6">

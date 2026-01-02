@@ -116,8 +116,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                 <button
                   onClick={() => setBuyInType('cash')}
                   className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'cash'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-700 text-gray-300'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-700 text-gray-300'
                     }`}
                 >
                   מזומן
@@ -125,8 +125,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                 <button
                   onClick={() => setBuyInType('bit')}
                   className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'bit'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300'
                     }`}
                 >
                   BIT
@@ -344,7 +344,8 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-300">אופן תשלום:</span>
-                            <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' : 'bg-blue-600'
+                            <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
+                                transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
                               }`}>
                               {transaction.paymentMethod.description}
                             </span>
