@@ -123,11 +123,11 @@ function App() {
   };
 
   const handleUpdatePlayer = (playerNameToUpdate, updates) => {
-    socket.emit('update-player', { playerName: playerNameToUpdate, updates });
+    socket.emit('update-player', { roomCode, playerName: playerNameToUpdate, updates });
   };
 
   const handleUpdateGameSettings = (newSettings) => {
-    socket.emit('update-game-settings', newSettings);
+    socket.emit('update-game-settings', { roomCode, newSettings });
   };
 
   const handleLeaveGame = () => {
