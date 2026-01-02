@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -12,9 +14,27 @@ const io = socketIo(server, {
   }
 });
 
-
 app.use(cors());
 app.use(express.json());
+
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI || 'mongodb+srv://admin:admin@cluster0.dcji2pl.mongodb.net/?appName=Cluster0')
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.error('MongoDB Connection Error:', err));
+
+// User Schema
+const UserSchema = new mongoose.Schema({
+  googleId: String,
+  email: String,
+  name: String,
+  picture: String,
+  stats: {
+    totalProfit: { type: Number, default: 0 },
+    gamesPlayed: { type: Number, default: 0 },
+    lastPlayed: Date
+  }
+});
+const User = mongoose.model('User', UserSchema);
 
 app.get('/', (req, res) => {
   res.send('Poker Server is running');
