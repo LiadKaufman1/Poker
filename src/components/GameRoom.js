@@ -71,7 +71,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <div className="glass-effect rounded-lg p-2 w-[85%] mr-2">
+          <div className="glass-effect rounded-lg p-2 w-[65%] mr-2">
             <h1 className="text-xl font-bold text-poker-green-400 drop-shadow-lg leading-tight">
               חדר: {roomCode}
             </h1>
