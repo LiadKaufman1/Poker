@@ -18,11 +18,16 @@ function App() {
   useEffect(() => {
     // מאזינים לאירועים מהשרת
 
-    socket.on('room-created', ({ roomCode, room }) => {
+    socket.on('room-created', ({ roomCode, room, adminSecret }) => {
       setRoomCode(roomCode);
       setRoom(room);
       setGameState('game');
       setError('');
+
+      // Save admin secret for reconnection
+      if (adminSecret) {
+        localStorage.setItem(`poker_admin_${roomCode}`, adminSecret);
+      }
     });
 
     socket.on('room-updated', (updatedRoom) => {
@@ -60,7 +65,8 @@ function App() {
 
   const handleJoinGame = (existingRoomCode, newPlayerName) => {
     setPlayerName(newPlayerName);
-    socket.emit('join-room', { roomCode: existingRoomCode, playerName: newPlayerName });
+    const adminSecret = localStorage.getItem(`poker_admin_${existingRoomCode}`);
+    socket.emit('join-room', { roomCode: existingRoomCode, playerName: newPlayerName, adminSecret });
   };
 
   const handleUpdatePlayer = (playerNameToUpdate, updates) => {

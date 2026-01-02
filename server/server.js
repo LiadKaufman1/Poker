@@ -34,9 +34,11 @@ io.on('connection', (socket) => {
   // יצירת חדר חדש
   socket.on('create-room', (playerName) => {
     const roomCode = generateRoomCode();
+    const adminSecret = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2); // Secret token
     const room = {
       code: roomCode,
       adminId: socket.id, // Creator is the admin
+      adminSecret,        // Secret to reclaim admin rights
       players: [{
         id: socket.id,
         name: playerName,
@@ -52,12 +54,13 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
-    socket.emit('room-created', { roomCode, room });
-    console.log(`חדר ${roomCode} נוצר על ידי ${playerName}`);
+    // Send secret ONLY to the creator (in the callback/response)
+    socket.emit('room-created', { roomCode, room, adminSecret });
+    console.log(`חדר ${roomCode} נוצר על ידי ${playerName} (Admin Secret generated)`);
   });
 
   // הצטרפות לחדר
-  socket.on('join-room', ({ roomCode, playerName }) => {
+  socket.on('join-room', ({ roomCode, playerName, adminSecret }) => {
     const room = rooms.get(roomCode);
 
     if (!room) {
@@ -79,6 +82,12 @@ io.on('connection', (socket) => {
         buyIns: [],
         cashOut: undefined
       });
+    }
+
+    // בדיקה אם השחקן הוא האדמין (reclaim via secret)
+    if (adminSecret && room.adminSecret === adminSecret) {
+      room.adminId = socket.id;
+      console.log(`Admin reclaimed room ${roomCode} via secret`);
     }
 
     socket.join(roomCode);
