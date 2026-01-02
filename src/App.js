@@ -109,6 +109,9 @@ function App() {
           <p>טוען...</p>
         </div>
       )}
+      <footer className="text-center p-4 text-gray-500 text-sm mt-auto w-full absolute bottom-0">
+        <p>פותח על ידי Liad Kaufman</p>
+      </footer>
     </div>
   );
 }
