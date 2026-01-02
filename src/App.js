@@ -5,7 +5,7 @@ import GameRoom from './components/GameRoom';
 import './index.css';
 
 // חיבור לשרת - ניתן לשנות את ה-URL לפי הצורך (בפרודקשן צריך להיות הכתובת האמיתית)
-const SOCKET_URL = 'http://localhost:3001';
+const SOCKET_URL = 'https://poker-newnew.onrender.com';
 const socket = io(SOCKET_URL);
 
 function App() {
@@ -76,9 +76,9 @@ function App() {
           {error}
         </div>
       )}
-      
+
       {gameState === 'lobby' ? (
-        <Lobby 
+        <Lobby
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
         />
