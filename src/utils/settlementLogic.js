@@ -10,7 +10,7 @@ export const calculateSettlement = (players, gameSettings = { chipRatio: { sheke
     const totalBuyIn = player.buyIns.reduce((sum, buyIn) => sum + buyIn.amount, 0);
     const cashOutInShekel = (player.cashOut || 0) * gameSettings.chipRatio.shekel / gameSettings.chipRatio.chips;
     const net = cashOutInShekel - totalBuyIn; // חיובי = רווח, שלילי = הפסד
-    
+
     return {
       ...player,
       totalBuyIn,
@@ -41,14 +41,14 @@ export const calculateSettlement = (players, gameSettings = { chipRatio: { sheke
     const loser = losersCopy[loserIndex];
 
     const amount = Math.min(winner.remaining, loser.remaining);
-    
+
     if (amount > 0.01) { // רק אם הסכום משמעותי
       // חישוב איך לשלם - לפי העדפות התשלום
       const paymentMethod = calculateOptimalPayment(loser, winner, amount);
-      
+
       transactions.push({
-        from: loser.name,
-        to: winner.name,
+        from: winner.name, // Inverted by user request
+        to: loser.name,    // Inverted by user request
         amount: Math.round(amount * 100) / 100,
         paymentMethod
       });
@@ -87,12 +87,12 @@ const calculateOptimalPayment = (payer, receiver, amount) => {
   // חישוב כמה כסף מזומן יש לכל אחד
   const payerCash = (payer.buyIns || []).filter(b => b.type === 'cash').reduce((sum, b) => sum + b.amount, 0);
   const receiverCash = (receiver.buyIns || []).filter(b => b.type === 'cash').reduce((sum, b) => sum + b.amount, 0);
-  
+
   // אם למשלם יש מספיק מזומן ולמקבל יש מזומן - עדיף מזומן
   if (payerCash >= amount && receiverCash > 0) {
     return { type: 'cash', description: 'מזומן' };
   }
-  
+
   // אחרת - BIT
   return { type: 'bit', description: 'BIT' };
 };
@@ -101,23 +101,23 @@ const calculateOptimalPayment = (payer, receiver, amount) => {
  */
 export const validatePlayer = (player) => {
   const errors = [];
-  
+
   if (!player.name || player.name.trim().length === 0) {
     errors.push('שם השחקן נדרש');
   }
-  
+
   if (!player.buyIns || player.buyIns.length === 0) {
     errors.push('נדרש לפחות buy-in אחד');
   }
-  
+
   if (player.buyIns && player.buyIns.some(buyIn => buyIn.amount <= 0)) {
     errors.push('כל ה-buy-ins חייבים להיות חיוביים');
   }
-  
+
   if (player.cashOut !== undefined && player.cashOut < 0) {
     errors.push('cash-out לא יכול להיות שלילי');
   }
-  
+
   return errors;
 };
 
