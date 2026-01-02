@@ -238,213 +238,302 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     </div>
 
                     {/* Admin Controls */}
-                    {isAdmin && player.name !== playerName && (
-                      <div className="mt-2 pt-2 border-t border-gray-600 grid grid-cols-2 gap-2">
-                        <div className="col-span-2 text-xs text-gray-400 mb-1">ניהול מנהל:</div>
+                    {isAdmin && (
+                      <div className="mt-2 pt-2 border-t border-gray-600">
+                        <button
+                          onClick={() => setManagingPlayerId(managingPlayerId === player.id ? null : player.id)}
+                          className="text-xs text-blue-300 hover:text-blue-200 w-full text-right"
+                        >
+                          {managingPlayerId === player.id ? 'סגור ניהול' : 'ניהול/עריכה...'}
+                        </button>
 
-                        {/* Quick Add Buy-in */}
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="buy-in"
-                            className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const amount = parseFloat(e.target.value);
-                                if (amount > 0) {
-                                  const updatedBuyIns = [...(player.buyIns || []), {
-                                    amount,
-                                    type: 'bit', // Default to Bit for remote edits usually, or explicit?
-                                    timestamp: new Date().toISOString()
-                                  }];
-                                  onUpdatePlayer(player.name, { buyIns: updatedBuyIns });
-                                  e.target.value = '';
-                                }
-                              }
-                            }}
-                          />
-                        </div>
+                        {managingPlayerId === player.id && (
+                          <div className="mt-2 space-y-3 bg-gray-800 p-2 rounded">
+                            {/* Add Buy In */}
+                            <div>
+                              <label className="text-xs text-gray-400 block mb-1">הוסף Buy-in:</label>
+                              <div className="flex gap-1 mb-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'cash' }))}
+                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'cash' ? 'bg-green-600' : 'bg-gray-600'}`}
+                                >
+                                  מזומן
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'bit' }))}
+                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'bit' || !adminBuyInType[player.name] ? 'bg-blue-600' : 'bg-gray-600'}`}
+                                >
+                                  BIT
+                                </button>
+                              </div>
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  placeholder="סכום"
+                                  className="w-full bg-gray-700 rounded px-2 py-1 text-xs text-white"
+                                  id={`admin-buyin-${player.id}`}
+                                />
+                                <button
+                                  onClick={() => {
+                                    const input = document.getElementById(`admin-buyin-${player.id}`);
+                                    const amount = parseFloat(input.value);
+                                    if (amount > 0) {
+                                      const type = adminBuyInType[player.name] || 'bit';
+                                      const updatedBuyIns = [...(player.buyIns || []), {
+                                        amount,
+                                        type,
+                                        timestamp: new Date().toISOString()
+                                      }];
+                                      onUpdatePlayer(player.name, { buyIns: updatedBuyIns });
+                                      input.value = '';
+                                    }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 rounded"
+                                >
+                                  הוסף
+                                </button>
+                              </div>
+                            </div>
 
-                        {/* Quick Cashout */}
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            placeholder="cash-out"
-                            className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const amount = parseFloat(e.target.value);
-                                if (!isNaN(amount)) {
-                                  onUpdatePlayer(player.name, { cashOut: amount });
-                                  e.target.value = '';
-                                }
-                              }
-                            }}
-                          />
-                        </div>
-                        <div className="col-span-2 text-[10px] text-gray-500 text-center">
-                          (לחץ Enter לשמירה. Buy-in ברירת מחדל: BIT)
-                        </div>
+                            {/* Edit/Delete History */}
+                            {player.buyIns && player.buyIns.length > 0 && (
+                              <div>
+                                <label className="text-xs text-gray-400 block mb-1">היסטוריית Buy-ins (לחץ למחיקה):</label>
+                                <div className="space-y-1 max-h-32 overflow-y-auto">
+                                  {player.buyIns.map((bi, i) => (
+                                    <div key={i} className="flex justify-between items-center bg-gray-700 px-2 py-1 rounded text-xs">
+                                      <span>₪{bi.amount} ({bi.type === 'cash' ? 'מזומן' : 'BIT'})</span>
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm('למחוק רשומה זו?')) {
+                                            const updatedBuyIns = player.buyIns.filter((_, idx) => idx !== i);
+                                            onUpdatePlayer(player.name, { buyIns: updatedBuyIns });
+                                          }
+                                        }}
+                                        className="text-red-400 hover:text-red-300 font-bold px-1"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Cashout Edit */}
+                            <div className="pt-2 border-t border-gray-700">
+                              <label className="text-xs text-gray-400 block mb-1">עדכון Cash-out (צ'יפים):</label>
+                              <div className="flex gap-1">
+                                <input
+                                  type="number"
+                                  defaultValue={player.cashOut}
+                                  className="w-full bg-gray-700 rounded px-2 py-1 text-xs text-white"
+                                  id={`admin-cashout-${player.id}`}
+                                />
+                                <button
+                                  onClick={() => {
+                                    const input = document.getElementById(`admin-cashout-${player.id}`);
+                                    const val = parseFloat(input.value);
+                                    if (input.value === '') {
+                                      onUpdatePlayer(player.name, { cashOut: undefined });
+                                    } else if (!isNaN(val)) {
+                                      onUpdatePlayer(player.name, { cashOut: val });
+                                    }
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 rounded"
+                                >
+                                  עדכן
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Calculate Settlement Button */}
-            <button
-              onClick={handleCalculateSettlement}
-              className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-4 px-6 rounded-lg text-lg"
-            >
-              חשב התחשבנות
-            </button>
-          </>
-        ) : showSettings ? (
-          /* Settings Screen */
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-poker-green-400">הגדרות משחק</h2>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
-              >
-                חזור
-              </button>
-            </div>
-
-            {/* Chip Ratio Settings */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">יחס צ'יפים</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-2">שקלים</label>
-                    <input
-                      type="number"
-                      value={chipRatio.shekel}
-                      onChange={(e) => setChipRatio(prev => ({ ...prev, shekel: parseInt(e.target.value) || 1 }))}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
-                      min="1"
-                    />
-                  </div>
-                  <div className="text-2xl text-gray-400 mt-6">=</div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-2">צ'יפים</label>
-                    <input
-                      type="number"
-                      value={chipRatio.chips}
-                      onChange={(e) => setChipRatio(prev => ({ ...prev, chips: parseInt(e.target.value) || 1 }))}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
-                      min="1"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-gray-700 p-3 rounded">
-                  <p className="text-sm text-gray-300">
-                    דוגמה: ₪{chipRatio.shekel} = {chipRatio.chips} צ'יפים
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    צ'יפ אחד שווה ₪{(chipRatio.shekel / chipRatio.chips).toFixed(2)}
-                  </p>
-                </div>
-
-                <button
-                  onClick={handleUpdateChipRatio}
-                  className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-3 px-6 rounded-lg"
-                >
-                  שמור הגדרות
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Settlement Results */
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-poker-green-400">התחשבנות</h2>
-              <button
-                onClick={() => setShowSettlement(false)}
-                className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
-              >
-                חזור
-              </button>
-            </div>
-
-            {/* Balance Check */}
-            {settlement && (
-              <>
-                <div className={`p-4 rounded-lg ${settlement.isBalanced ? 'bg-green-900' : 'bg-red-900'}`}>
-                  <p className="font-semibold">
-                    {settlement.isBalanced ? '✅ המשחק מאוזן' : '❌ יש אי-התאמה'}
-                  </p>
-                  {!settlement.isBalanced && (
-                    <p className="text-sm mt-1">
-                      הפרש: ₪{settlement.discrepancy}
-                    </p>
-                  )}
-                </div>
-
-                {/* Transactions */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-4">העברות נדרשות ({settlement.transactions.length})</h3>
-                  {settlement.transactions.length === 0 ? (
-                    <p className="text-gray-400">אין העברות נדרשות</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {settlement.transactions.map((transaction, index) => (
-                        <div key={index} className="bg-gray-700 p-4 rounded">
-                          <div className="flex justify-between items-center mb-2">
-                            <div>
-                              <span className="font-medium text-red-400">{transaction.from}</span>
-                              <span className="mx-2">→</span>
-                              <span className="font-medium text-green-400">{transaction.to}</span>
-                            </div>
-                            <span className="font-bold text-lg">₪{transaction.amount}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-300">אופן תשלום:</span>
-                            <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
-                              transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
-                              }`}>
-                              {transaction.paymentMethod.description}
-                            </span>
-                          </div>
+                        {/* Quick Cashout */ }
+                  < div className = "flex gap-1" >
+                  <input
+                    type="number"
+                    placeholder="cash-out"
+                    className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const amount = parseFloat(e.target.value);
+                        if (!isNaN(amount)) {
+                          onUpdatePlayer(player.name, { cashOut: amount });
+                          e.target.value = '';
+                        }
+                      }
+                    }}
+                  />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Summary */}
-                <div className="bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-4">סיכום</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>סה"כ Buy-ins:</span>
-                      <span>₪{settlement.summary.totalBuyIns}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>סה"כ Cash-outs:</span>
-                      <span>₪{settlement.summary.totalCashOuts}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>מספר העברות:</span>
-                      <span>{settlement.summary.totalTransactions}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>יחס צ'יפים:</span>
-                      <span>{settlement.summary.chipRatio}</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+              <div className="col-span-2 text-[10px] text-gray-500 text-center">
+                (לחץ Enter לשמירה. Buy-in ברירת מחדל: BIT)
+              </div>
+            </div>
+                    )}
           </div>
-        )}
+                ))}
       </div>
     </div>
+
+            {/* Calculate Settlement Button */ }
+  <button
+    onClick={handleCalculateSettlement}
+    className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-4 px-6 rounded-lg text-lg"
+  >
+    חשב התחשבנות
+  </button>
+          </>
+        ) : showSettings ? (
+  /* Settings Screen */
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-2xl font-bold text-poker-green-400">הגדרות משחק</h2>
+      <button
+        onClick={() => setShowSettings(false)}
+        className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+      >
+        חזור
+      </button>
+    </div>
+
+    {/* Chip Ratio Settings */}
+    <div className="bg-gray-800 rounded-lg p-4">
+      <h3 className="text-lg font-semibold mb-4">יחס צ'יפים</h3>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2">שקלים</label>
+            <input
+              type="number"
+              value={chipRatio.shekel}
+              onChange={(e) => setChipRatio(prev => ({ ...prev, shekel: parseInt(e.target.value) || 1 }))}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+              min="1"
+            />
+          </div>
+          <div className="text-2xl text-gray-400 mt-6">=</div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-2">צ'יפים</label>
+            <input
+              type="number"
+              value={chipRatio.chips}
+              onChange={(e) => setChipRatio(prev => ({ ...prev, chips: parseInt(e.target.value) || 1 }))}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+              min="1"
+            />
+          </div>
+        </div>
+
+        <div className="bg-gray-700 p-3 rounded">
+          <p className="text-sm text-gray-300">
+            דוגמה: ₪{chipRatio.shekel} = {chipRatio.chips} צ'יפים
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            צ'יפ אחד שווה ₪{(chipRatio.shekel / chipRatio.chips).toFixed(2)}
+          </p>
+        </div>
+
+        <button
+          onClick={handleUpdateChipRatio}
+          className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+        >
+          שמור הגדרות
+        </button>
+      </div>
+    </div>
+  </div>
+) : (
+  /* Settlement Results */
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-2xl font-bold text-poker-green-400">התחשבנות</h2>
+      <button
+        onClick={() => setShowSettlement(false)}
+        className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+      >
+        חזור
+      </button>
+    </div>
+
+    {/* Balance Check */}
+    {settlement && (
+      <>
+        <div className={`p-4 rounded-lg ${settlement.isBalanced ? 'bg-green-900' : 'bg-red-900'}`}>
+          <p className="font-semibold">
+            {settlement.isBalanced ? '✅ המשחק מאוזן' : '❌ יש אי-התאמה'}
+          </p>
+          {!settlement.isBalanced && (
+            <p className="text-sm mt-1">
+              הפרש: ₪{settlement.discrepancy}
+            </p>
+          )}
+        </div>
+
+        {/* Transactions */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-4">העברות נדרשות ({settlement.transactions.length})</h3>
+          {settlement.transactions.length === 0 ? (
+            <p className="text-gray-400">אין העברות נדרשות</p>
+          ) : (
+            <div className="space-y-3">
+              {settlement.transactions.map((transaction, index) => (
+                <div key={index} className="bg-gray-700 p-4 rounded">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <span className="font-medium text-red-400">{transaction.from}</span>
+                      <span className="mx-2">→</span>
+                      <span className="font-medium text-green-400">{transaction.to}</span>
+                    </div>
+                    <span className="font-bold text-lg">₪{transaction.amount}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-300">אופן תשלום:</span>
+                    <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
+                      transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
+                      }`}>
+                      {transaction.paymentMethod.description}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Summary */}
+        <div className="bg-gray-800 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-4">סיכום</h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>סה"כ Buy-ins:</span>
+              <span>₪{settlement.summary.totalBuyIns}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>סה"כ Cash-outs:</span>
+              <span>₪{settlement.summary.totalCashOuts}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>מספר העברות:</span>
+              <span>{settlement.summary.totalTransactions}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>יחס צ'יפים:</span>
+              <span>{settlement.summary.chipRatio}</span>
+            </div>
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+)}
+      </div >
+    </div >
   );
 };
 
