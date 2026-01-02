@@ -6,6 +6,13 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
   const [playerName, setPlayerName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
+  // עדכון קוד החדר אם הוא מגיע ב-props (מה-URL)
+  React.useEffect(() => {
+    if (initialRoomCode) {
+      setRoomCode(initialRoomCode);
+    }
+  }, [initialRoomCode]);
+
   const handleCreateGame = () => {
     if (!playerName.trim()) {
       alert('אנא הכנס שם שחקן');
