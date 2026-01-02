@@ -99,6 +99,7 @@ function App() {
           roomCode={roomCode}
           playerName={playerName}
           isAdmin={room.adminId === socket.id}
+          adminId={room.adminId}
           players={room.players}
           gameSettings={room.gameSettings}
           onUpdatePlayer={handleUpdatePlayer}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateSettlement } from '../utils/settlementLogic';
 
-const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer, onUpdateGameSettings, onLeaveGame, isAdmin }) => {
+const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer, onUpdateGameSettings, onLeaveGame, isAdmin, adminId }) => {
   const [newBuyIn, setNewBuyIn] = useState('');
   const [buyInType, setBuyInType] = useState('cash');
   const [cashOutAmount, setCashOutAmount] = useState('');
@@ -216,7 +216,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     <div className="flex justify-between items-center mb-1">
                       <span className="font-medium flex items-center gap-2">
                         {player.name}
-                        {(room?.adminId === player.id || index === 0) && <span className="text-xs text-yellow-400">👑</span>}
+                        {(adminId === player.id || index === 0) && <span className="text-xs text-yellow-400">👑</span>}
                       </span>
                       <span className="text-sm text-gray-300">
                         Buy-in: ₪{getTotalBuyIn(player)}
