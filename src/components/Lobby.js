@@ -97,7 +97,7 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
           </div>
         </div>
       </div>
-      </div>
+
       <div className="mt-8 text-center space-y-4">
         <a
           href="https://links.payboxapp.com/eKFtZLBgBZb"
