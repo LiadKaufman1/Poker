@@ -217,7 +217,41 @@ io.on('connection', (socket) => {
     console.log(`${playerName} הצטרף לחדר ${roomCode} (GoogleID: ${googleId})`);
   });
 
-  // ... (update-player and settings handlers remain same)
+  // עדכון שחקן
+  socket.on('update-player', ({ roomCode, playerName, updates }) => {
+    // Fallback to socket.roomCode if not provided (backwards compatibility)
+    const code = roomCode || socket.roomCode;
+    console.log(`Update player request: Room ${code}, Player ${playerName}`);
+
+    const room = rooms.get(code);
+
+    if (room) {
+      const player = room.players.find(p => p.name === playerName);
+      if (player) {
+        Object.assign(player, updates);
+        io.to(code).emit('room-updated', room);
+        console.log(`Player ${playerName} updated in room ${code}`);
+      } else {
+        console.error(`Player ${playerName} not found in room ${code}`);
+      }
+    } else {
+      console.error(`Room ${code} not found during update`);
+      socket.emit('room-closed'); // Force client to leave zombie room
+    }
+  });
+
+  // עדכון הגדרות משחק
+  socket.on('update-game-settings', ({ roomCode, newSettings }) => {
+    const code = roomCode || socket.roomCode;
+    const room = rooms.get(code);
+
+    if (room) {
+      Object.assign(room.gameSettings, newSettings);
+      io.to(code).emit('room-updated', room);
+    } else {
+      socket.emit('room-closed'); // Force client to leave zombie room
+    }
+  });
 
   // סגירת חדר (על ידי מנהל)
   socket.on('close-room', async () => {
