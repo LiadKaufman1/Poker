@@ -97,10 +97,22 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
           </div>
         </div>
       </div>
-      <footer className="text-center p-4 text-gray-400 text-lg mt-12">
-        <p>פותח על ידי Liad Kaufman</p>
-      </footer>
-    </div>
+      </div>
+      <div className="mt-8 text-center space-y-4">
+        <a
+          href="https://links.payboxapp.com/eKFtZLBgBZb"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium transition-colors shadow-lg"
+        >
+          <span>🍺</span>
+          <span>פרגנו בבירה (PayBox)</span>
+        </a>
+        <footer className="text-gray-400 text-lg">
+          <p>פותח על ידי Liad Kaufman</p>
+        </footer>
+      </div>
+    </div >
   );
 };
 
