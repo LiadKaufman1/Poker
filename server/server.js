@@ -36,6 +36,7 @@ io.on('connection', (socket) => {
     const roomCode = generateRoomCode();
     const room = {
       code: roomCode,
+      adminId: socket.id, // Creator is the admin
       players: [{
         id: socket.id,
         name: playerName,

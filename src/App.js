@@ -98,6 +98,7 @@ function App() {
         <GameRoom
           roomCode={roomCode}
           playerName={playerName}
+          isAdmin={room.adminId === socket.id}
           players={room.players}
           gameSettings={room.gameSettings}
           onUpdatePlayer={handleUpdatePlayer}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { calculateSettlement } from '../utils/settlementLogic';
 
-const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer, onUpdateGameSettings, onLeaveGame }) => {
+const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer, onUpdateGameSettings, onLeaveGame, isAdmin }) => {
   const [newBuyIn, setNewBuyIn] = useState('');
   const [buyInType, setBuyInType] = useState('cash');
   const [cashOutAmount, setCashOutAmount] = useState('');
@@ -116,6 +116,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
               {/* בחירת סוג תשלום */}
               <div className="flex gap-2 mb-4">
                 <button
+                  type="button"
                   onClick={() => setBuyInType('cash')}
                   className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'cash'
                     ? 'bg-green-600 text-white'
@@ -125,6 +126,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                   מזומן
                 </button>
                 <button
+                  type="button"
                   onClick={() => setBuyInType('bit')}
                   className={`flex-1 py-2 px-4 rounded font-medium ${buyInType === 'bit'
                     ? 'bg-blue-600 text-white'
@@ -210,14 +212,18 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
               <h2 className="text-lg font-semibold mb-4">שחקנים ({players.length})</h2>
               <div className="space-y-2">
                 {players.map((player, index) => (
-                  <div key={index} className="p-3 bg-gray-700 rounded">
+                  <div key={index} className="p-3 bg-gray-700 rounded transition-all">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium">{player.name}</span>
+                      <span className="font-medium flex items-center gap-2">
+                        {player.name}
+                        {(room?.adminId === player.id || index === 0) && <span className="text-xs text-yellow-400">👑</span>}
+                      </span>
                       <span className="text-sm text-gray-300">
                         Buy-in: ₪{getTotalBuyIn(player)}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-400 flex justify-between">
+
+                    <div className="text-xs text-gray-400 flex justify-between mb-2">
                       <div>
                         <span>מזומן: ₪{getBuyInsByType(player, 'cash')}</span>
                         <span className="ml-2">BIT: ₪{getBuyInsByType(player, 'bit')}</span>
@@ -228,6 +234,57 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                         </span>
                       )}
                     </div>
+
+                    {/* Admin Controls */}
+                    {isAdmin && player.name !== playerName && (
+                      <div className="mt-2 pt-2 border-t border-gray-600 grid grid-cols-2 gap-2">
+                        <div className="col-span-2 text-xs text-gray-400 mb-1">ניהול מנהל:</div>
+
+                        {/* Quick Add Buy-in */}
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="buy-in"
+                            className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const amount = parseFloat(e.target.value);
+                                if (amount > 0) {
+                                  const updatedBuyIns = [...(player.buyIns || []), {
+                                    amount,
+                                    type: 'bit', // Default to Bit for remote edits usually, or explicit?
+                                    timestamp: new Date().toISOString()
+                                  }];
+                                  onUpdatePlayer(player.name, { buyIns: updatedBuyIns });
+                                  e.target.value = '';
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {/* Quick Cashout */}
+                        <div className="flex gap-1">
+                          <input
+                            type="number"
+                            placeholder="cash-out"
+                            className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const amount = parseFloat(e.target.value);
+                                if (!isNaN(amount)) {
+                                  onUpdatePlayer(player.name, { cashOut: amount });
+                                  e.target.value = '';
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                        <div className="col-span-2 text-[10px] text-gray-500 text-center">
+                          (לחץ Enter לשמירה. Buy-in ברירת מחדל: BIT)
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
