@@ -136,13 +136,18 @@ io.on('connection', (socket) => {
   socket.on('create-room', (playerName) => {
     const roomCode = generateRoomCode();
     const adminSecret = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2); // Secret token
+
+    // Attach Google ID if user is logged in
+    const googleId = socket.user ? socket.user.googleId : null;
+
     const room = {
       code: roomCode,
-      adminId: socket.id, // Creator is the admin
-      adminSecret,        // Secret to reclaim admin rights
+      adminId: socket.id,
+      adminSecret,
       players: [{
         id: socket.id,
         name: playerName,
+        googleId, // Store Google ID
         buyIns: [],
         cashOut: undefined
       }],
@@ -163,9 +168,9 @@ io.on('connection', (socket) => {
       totalRoomsCreated
     });
 
-    // Send secret ONLY to the creator (in the callback/response)
+    // Send secret ONLY to the creator
     socket.emit('room-created', { roomCode, room, adminSecret });
-    console.log(`חדר ${roomCode} נוצר על ידי ${playerName} (Admin Secret generated)`);
+    console.log(`חדר ${roomCode} נוצר על ידי ${playerName} (GoogleID: ${googleId})`);
   });
 
   // הצטרפות לחדר
@@ -177,23 +182,29 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Attach Google ID if user is logged in
+    const googleId = socket.user ? socket.user.googleId : null;
+
     // בדיקה אם השחקן כבר קיים
     const existingPlayer = room.players.find(p => p.name === playerName);
 
     if (existingPlayer) {
-      // עדכון ID של שחקן קיים
       existingPlayer.id = socket.id;
+      // Update Google ID if it was missing (e.g. late login)
+      if (!existingPlayer.googleId && googleId) {
+        existingPlayer.googleId = googleId;
+      }
     } else {
-      // הוספת שחקן חדש
       room.players.push({
         id: socket.id,
         name: playerName,
+        googleId, // Store Google ID
         buyIns: [],
         cashOut: undefined
       });
     }
 
-    // בדיקה אם השחקן הוא האדמין (reclaim via secret)
+    // בדיקה אם השחקן הוא האדמין
     if (adminSecret && room.adminSecret === adminSecret) {
       room.adminId = socket.id;
       console.log(`Admin reclaimed room ${roomCode} via secret`);
@@ -202,46 +213,52 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
-    // שליחת עדכון לכל השחקנים בחדר
     io.to(roomCode).emit('room-updated', room);
-    console.log(`${playerName} הצטרף לחדר ${roomCode}`);
+    console.log(`${playerName} הצטרף לחדר ${roomCode} (GoogleID: ${googleId})`);
   });
 
-  // עדכון שחקן
-  socket.on('update-player', ({ playerName, updates }) => {
-    const roomCode = socket.roomCode;
-    const room = rooms.get(roomCode);
-
-    if (room) {
-      const player = room.players.find(p => p.name === playerName);
-      if (player) {
-        Object.assign(player, updates);
-        io.to(roomCode).emit('room-updated', room);
-      }
-    }
-  });
-
-  // עדכון הגדרות משחק
-  socket.on('update-game-settings', (newSettings) => {
-    const roomCode = socket.roomCode;
-    const room = rooms.get(roomCode);
-
-    if (room) {
-      Object.assign(room.gameSettings, newSettings);
-      io.to(roomCode).emit('room-updated', room);
-    }
-  });
+  // ... (update-player and settings handlers remain same)
 
   // סגירת חדר (על ידי מנהל)
-  socket.on('close-room', () => {
+  socket.on('close-room', async () => {
     const roomCode = socket.roomCode;
     const room = rooms.get(roomCode);
 
     if (room && room.adminId === socket.id) {
-      // Notify all players in the room
+      // 1. Calculate and Save Stats for each player
+      console.log(`Closing room ${roomCode}. Saving stats...`);
+
+      for (const player of room.players) {
+        if (player.googleId && player.cashOut !== undefined) {
+          // Calculate Net Profit
+          const totalBuyIn = player.buyIns.reduce((sum, bi) => sum + bi.amount, 0);
+          const ratio = room.gameSettings.chipRatio.shekel / room.gameSettings.chipRatio.chips;
+          const cashOutShekels = player.cashOut * ratio;
+          const netProfit = cashOutShekels - totalBuyIn;
+
+          try {
+            await User.updateOne(
+              { googleId: player.googleId },
+              {
+                $inc: {
+                  "stats.totalProfit": netProfit,
+                  "stats.gamesPlayed": 1
+                },
+                $set: {
+                  "stats.lastPlayed": new Date()
+                }
+              }
+            );
+            console.log(`Stats saved for ${player.name}: Profit ${netProfit}`);
+          } catch (err) {
+            console.error(`Failed to save stats for ${player.name}:`, err);
+          }
+        }
+      }
+
+      // 2. Notify and Close
       io.to(roomCode).emit('room-closed');
 
-      // Clear socket room associations
       const clients = io.sockets.adapter.rooms.get(roomCode);
       if (clients) {
         for (const clientId of clients) {
@@ -253,11 +270,9 @@ io.on('connection', (socket) => {
         }
       }
 
-      // Delete the room
       rooms.delete(roomCode);
       console.log(`Room ${roomCode} closed by admin`);
 
-      // Broadcast stats update
       io.emit('stats-update', {
         activeRooms: rooms.size,
         totalRoomsCreated

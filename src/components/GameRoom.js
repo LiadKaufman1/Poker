@@ -457,6 +457,35 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                   )}
                 </div>
 
+                {/* Profit/Loss Table */}
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-4">טבלת רווח/הפסד</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-right">
+                      <thead className="text-gray-400 border-b border-gray-700">
+                        <tr>
+                          <th className="pb-2">שחקן</th>
+                          <th className="pb-2">Buy-in</th>
+                          <th className="pb-2">Cash-out</th>
+                          <th className="pb-2">רווח/הפסד</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-700">
+                        {settlement.players.map((p, i) => (
+                          <tr key={i}>
+                            <td className="py-2 font-medium">{p.name}</td>
+                            <td className="py-2 text-gray-300">₪{p.totalBuyIn}</td>
+                            <td className="py-2 text-gray-300">₪{Math.round(p.cashOutInShekel)}</td>
+                            <td className={`py-2 font-bold ${p.net > 0 ? 'text-green-400' : p.net < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                              {p.net > 0 ? '+' : ''}₪{Math.round(p.net * 100) / 100}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 {/* Transactions */}
                 <div className="bg-gray-800 rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-4">העברות נדרשות ({settlement.transactions.length})</h3>
