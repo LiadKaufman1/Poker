@@ -198,25 +198,24 @@ io.on('connection', (socket) => {
 
   // התנתקות
   socket.on('disconnect', () => {
-    socket.on('disconnect', () => {
-      console.log('שחקן התנתק:', socket.id);
+    console.log('שחקן התנתק:', socket.id);
 
-      if (socket.roomCode) {
-        const room = rooms.get(socket.roomCode);
-        if (room) {
-          // לא מוחקים את השחקן, רק מעדכנים שהוא לא מחובר
-          const player = room.players.find(p => p.id === socket.id);
-          if (player) {
-            player.id = null; // מסמן שהשחקן לא מחובר
-          }
-
-          io.to(socket.roomCode).emit('room-updated', room);
+    if (socket.roomCode) {
+      const room = rooms.get(socket.roomCode);
+      if (room) {
+        // לא מוחקים את השחקן, רק מעדכנים שהוא לא מחובר
+        const player = room.players.find(p => p.id === socket.id);
+        if (player) {
+          player.id = null; // מסמן שהשחקן לא מחובר
         }
-      }
-    });
-  });
 
-  const PORT = process.env.PORT || 3001;
-  server.listen(PORT, () => {
-    console.log(`Server רץ על פורט ${PORT}`);
+        io.to(socket.roomCode).emit('room-updated', room);
+      }
+    }
   });
+});
+
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, () => {
+  console.log(`Server רץ על פורט ${PORT}`);
+});
