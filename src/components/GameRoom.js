@@ -256,14 +256,14 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                                 <button
                                   type="button"
                                   onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'cash' }))}
-                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'cash' ? 'bg-green-600' : 'bg-gray-600'}`}
+                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'cash' || !adminBuyInType[player.name] ? 'bg-green-600' : 'bg-gray-600'}`}
                                 >
                                   מזומן
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setAdminBuyInType(prev => ({ ...prev, [player.name]: 'bit' }))}
-                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'bit' || !adminBuyInType[player.name] ? 'bg-blue-600' : 'bg-gray-600'}`}
+                                  className={`text-[10px] px-2 rounded ${adminBuyInType[player.name] === 'bit' ? 'bg-blue-600' : 'bg-gray-600'}`}
                                 >
                                   BIT
                                 </button>
@@ -280,7 +280,7 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                                     const input = document.getElementById(`admin-buyin-${player.id}`);
                                     const amount = parseFloat(input.value);
                                     if (amount > 0) {
-                                      const type = adminBuyInType[player.name] || 'bit';
+                                      const type = adminBuyInType[player.name] || 'cash';
                                       const updatedBuyIns = [...(player.buyIns || []), {
                                         amount,
                                         type,
