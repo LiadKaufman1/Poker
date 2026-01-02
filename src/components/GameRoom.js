@@ -241,7 +241,13 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     {isAdmin && (
                       <div className="mt-2 pt-2 border-t border-gray-600">
                         <button
-                          onClick={() => setManagingPlayerId(managingPlayerId === player.id ? null : player.id)}
+                          onClick={() => {
+                            const isOpening = managingPlayerId !== player.id;
+                            setManagingPlayerId(isOpening ? player.id : null);
+                            if (isOpening) {
+                              setAdminBuyInType(prev => ({ ...prev, [player.name]: 'cash' }));
+                            }
+                          }}
                           className="text-xs text-blue-300 hover:text-blue-200 w-full text-right"
                         >
                           {managingPlayerId === player.id ? 'סגור ניהול' : 'ניהול/עריכה...'}
