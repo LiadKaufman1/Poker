@@ -510,6 +510,18 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     </div>
                   </div>
                 </div>
+
+                <div className="text-center mt-6">
+                  <a
+                    href="https://links.payboxapp.com/eKFtZLBgBZb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium transition-colors shadow-lg"
+                  >
+                    <span>נהניתם? פרגנו</span>
+                    <span className="text-xl">🍺</span>
+                  </a>
+                </div>
               </>
             )}
           </div>

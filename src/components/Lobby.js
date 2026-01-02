@@ -105,11 +105,11 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode }) => {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium transition-colors shadow-lg"
         >
-          <span>🍺</span>
-          <span>פרגנו בבירה (PayBox)</span>
+          <span>נהניתם? פרגנו</span>
+          <span className="text-xl">🍺</span>
         </a>
         <footer className="text-gray-400 text-lg">
-          <p>פותח על ידי Liad Kaufman</p>
+          <p>עיצוב ופיתוח: Liad Kaufman</p>
         </footer>
       </div>
     </div >
