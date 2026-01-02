@@ -354,185 +354,164 @@ const GameRoom = ({ roomCode, playerName, players, gameSettings, onUpdatePlayer,
                     )}
                   </div>
 
-                        {/* Quick Cashout */ }
-                  < div className = "flex gap-1" >
-                  <input
-                    type="number"
-                    placeholder="cash-out"
-                    className="w-full bg-gray-800 rounded px-2 py-1 text-xs"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const amount = parseFloat(e.target.value);
-                        if (!isNaN(amount)) {
-                          onUpdatePlayer(player.name, { cashOut: amount });
-                          e.target.value = '';
-                        }
-                      }
-                    }}
-                  />
-                        </div>
-              <div className="col-span-2 text-[10px] text-gray-500 text-center">
-                (לחץ Enter לשמירה. Buy-in ברירת מחדל: BIT)
-              </div>
-            </div>
-                    )}
+
           </div>
                 ))}
-      </div>
-    </div>
-
-            {/* Calculate Settlement Button */ }
-  <button
-    onClick={handleCalculateSettlement}
-    className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-4 px-6 rounded-lg text-lg"
-  >
-    חשב התחשבנות
-  </button>
-          </>
-        ) : showSettings ? (
-  /* Settings Screen */
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-bold text-poker-green-400">הגדרות משחק</h2>
-      <button
-        onClick={() => setShowSettings(false)}
-        className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
-      >
-        חזור
-      </button>
-    </div>
-
-    {/* Chip Ratio Settings */}
-    <div className="bg-gray-800 rounded-lg p-4">
-      <h3 className="text-lg font-semibold mb-4">יחס צ'יפים</h3>
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">שקלים</label>
-            <input
-              type="number"
-              value={chipRatio.shekel}
-              onChange={(e) => setChipRatio(prev => ({ ...prev, shekel: parseInt(e.target.value) || 1 }))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
-              min="1"
-            />
+            </div>
           </div>
-          <div className="text-2xl text-gray-400 mt-6">=</div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2">צ'יפים</label>
-            <input
-              type="number"
-              value={chipRatio.chips}
-              onChange={(e) => setChipRatio(prev => ({ ...prev, chips: parseInt(e.target.value) || 1 }))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
-              min="1"
-            />
-          </div>
-        </div>
 
-        <div className="bg-gray-700 p-3 rounded">
-          <p className="text-sm text-gray-300">
-            דוגמה: ₪{chipRatio.shekel} = {chipRatio.chips} צ'יפים
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            צ'יפ אחד שווה ₪{(chipRatio.shekel / chipRatio.chips).toFixed(2)}
-          </p>
-        </div>
-
+        {/* Calculate Settlement Button */}
         <button
-          onClick={handleUpdateChipRatio}
-          className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+          onClick={handleCalculateSettlement}
+          className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-4 px-6 rounded-lg text-lg"
         >
-          שמור הגדרות
+          חשב התחשבנות
         </button>
-      </div>
-    </div>
-  </div>
-) : (
-  /* Settlement Results */
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-bold text-poker-green-400">התחשבנות</h2>
-      <button
-        onClick={() => setShowSettlement(false)}
-        className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
-      >
-        חזור
-      </button>
-    </div>
-
-    {/* Balance Check */}
-    {settlement && (
-      <>
-        <div className={`p-4 rounded-lg ${settlement.isBalanced ? 'bg-green-900' : 'bg-red-900'}`}>
-          <p className="font-semibold">
-            {settlement.isBalanced ? '✅ המשחק מאוזן' : '❌ יש אי-התאמה'}
-          </p>
-          {!settlement.isBalanced && (
-            <p className="text-sm mt-1">
-              הפרש: ₪{settlement.discrepancy}
-            </p>
-          )}
+      </>
+      ) : showSettings ? (
+      /* Settings Screen */
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-poker-green-400">הגדרות משחק</h2>
+          <button
+            onClick={() => setShowSettings(false)}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+          >
+            חזור
+          </button>
         </div>
 
-        {/* Transactions */}
+        {/* Chip Ratio Settings */}
         <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">העברות נדרשות ({settlement.transactions.length})</h3>
-          {settlement.transactions.length === 0 ? (
-            <p className="text-gray-400">אין העברות נדרשות</p>
-          ) : (
-            <div className="space-y-3">
-              {settlement.transactions.map((transaction, index) => (
-                <div key={index} className="bg-gray-700 p-4 rounded">
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <span className="font-medium text-red-400">{transaction.from}</span>
-                      <span className="mx-2">→</span>
-                      <span className="font-medium text-green-400">{transaction.to}</span>
-                    </div>
-                    <span className="font-bold text-lg">₪{transaction.amount}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-300">אופן תשלום:</span>
-                    <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
-                      transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
-                      }`}>
-                      {transaction.paymentMethod.description}
-                    </span>
-                  </div>
-                </div>
-              ))}
+          <h3 className="text-lg font-semibold mb-4">יחס צ'יפים</h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-2">שקלים</label>
+                <input
+                  type="number"
+                  value={chipRatio.shekel}
+                  onChange={(e) => setChipRatio(prev => ({ ...prev, shekel: parseInt(e.target.value) || 1 }))}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  min="1"
+                />
+              </div>
+              <div className="text-2xl text-gray-400 mt-6">=</div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-2">צ'יפים</label>
+                <input
+                  type="number"
+                  value={chipRatio.chips}
+                  onChange={(e) => setChipRatio(prev => ({ ...prev, chips: parseInt(e.target.value) || 1 }))}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                  min="1"
+                />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Summary */}
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-4">סיכום</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>סה"כ Buy-ins:</span>
-              <span>₪{settlement.summary.totalBuyIns}</span>
+            <div className="bg-gray-700 p-3 rounded">
+              <p className="text-sm text-gray-300">
+                דוגמה: ₪{chipRatio.shekel} = {chipRatio.chips} צ'יפים
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                צ'יפ אחד שווה ₪{(chipRatio.shekel / chipRatio.chips).toFixed(2)}
+              </p>
             </div>
-            <div className="flex justify-between">
-              <span>סה"כ Cash-outs:</span>
-              <span>₪{settlement.summary.totalCashOuts}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>מספר העברות:</span>
-              <span>{settlement.summary.totalTransactions}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>יחס צ'יפים:</span>
-              <span>{settlement.summary.chipRatio}</span>
-            </div>
+
+            <button
+              onClick={handleUpdateChipRatio}
+              className="w-full bg-poker-green-600 hover:bg-poker-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+            >
+              שמור הגדרות
+            </button>
           </div>
         </div>
-      </>
-    )}
-  </div>
+      </div>
+      ) : (
+      /* Settlement Results */
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-poker-green-400">התחשבנות</h2>
+          <button
+            onClick={() => setShowSettlement(false)}
+            className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded"
+          >
+            חזור
+          </button>
+        </div>
+
+        {/* Balance Check */}
+        {settlement && (
+          <>
+            <div className={`p-4 rounded-lg ${settlement.isBalanced ? 'bg-green-900' : 'bg-red-900'}`}>
+              <p className="font-semibold">
+                {settlement.isBalanced ? '✅ המשחק מאוזן' : '❌ יש אי-התאמה'}
+              </p>
+              {!settlement.isBalanced && (
+                <p className="text-sm mt-1">
+                  הפרש: ₪{settlement.discrepancy}
+                </p>
+              )}
+            </div>
+
+            {/* Transactions */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4">העברות נדרשות ({settlement.transactions.length})</h3>
+              {settlement.transactions.length === 0 ? (
+                <p className="text-gray-400">אין העברות נדרשות</p>
+              ) : (
+                <div className="space-y-3">
+                  {settlement.transactions.map((transaction, index) => (
+                    <div key={index} className="bg-gray-700 p-4 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <span className="font-medium text-red-400">{transaction.from}</span>
+                          <span className="mx-2">→</span>
+                          <span className="font-medium text-green-400">{transaction.to}</span>
+                        </div>
+                        <span className="font-bold text-lg">₪{transaction.amount}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-300">אופן תשלום:</span>
+                        <span className={`text-xs px-2 py-1 rounded ${transaction.paymentMethod.type === 'cash' ? 'bg-green-600' :
+                          transaction.paymentMethod.type === 'mixed' ? 'bg-purple-600' : 'bg-blue-600'
+                          }`}>
+                          {transaction.paymentMethod.description}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Summary */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4">סיכום</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>סה"כ Buy-ins:</span>
+                  <span>₪{settlement.summary.totalBuyIns}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>סה"כ Cash-outs:</span>
+                  <span>₪{settlement.summary.totalCashOuts}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>מספר העברות:</span>
+                  <span>{settlement.summary.totalTransactions}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>יחס צ'יפים:</span>
+                  <span>{settlement.summary.chipRatio}</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 )}
-      </div >
+    </div >
     </div >
   );
 };
