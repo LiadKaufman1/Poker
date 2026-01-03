@@ -14,6 +14,13 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
     }
   }, [initialRoomCode]);
 
+  // Auto-set name from logged-in user
+  React.useEffect(() => {
+    if (user && user.name) {
+      setPlayerName(user.name);
+    }
+  }, [user]);
+
   const handleCreateGame = () => {
     if (!playerName.trim()) {
       alert('אנא הכנס שם שחקן');
@@ -110,7 +117,8 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              className="input-field"
+              disabled={!!user}
+              className={`input-field ${user ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : ''}`}
               placeholder="הכנס את שמך"
               maxLength={20}
             />

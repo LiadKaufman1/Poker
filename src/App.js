@@ -67,7 +67,13 @@ function App() {
 
     socket.on('login-success', (userData) => {
       setUser(userData);
-      localStorage.setItem('poker_user_token', 'logged_in'); // Simple flag, real token logic handled via Google Button
+      localStorage.setItem('poker_session_token', userData.sessionToken);
+    });
+
+    socket.on('session-expired', () => {
+      console.log('Session expired');
+      localStorage.removeItem('poker_session_token');
+      setUser(null);
     });
 
     socket.on('room-closed', () => {
@@ -86,18 +92,27 @@ function App() {
       socket.off('error');
       socket.off('stats-update');
       socket.off('room-closed');
+      socket.off('login-success');
+      socket.off('session-expired');
     };
   }, []);
 
   useEffect(() => {
-    // בדיקה אם יש קוד חדר ב-URL
+    // 1. Try to restore session
+    const sessionToken = localStorage.getItem('poker_session_token');
+    if (sessionToken) {
+      console.log('Found session token, attempting auto-login...');
+      socket.emit('login-session', sessionToken);
+    }
+
+    // 2. Check for Room URL
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
 
     if (roomParam) {
       setRoomCode(roomParam);
     } else {
-      // אם אין ב-URL, בודקים אם יש חיבור פעיל ב-LocalStorage
+      // 3. Fallback: Check for active room in LocalStorage
       const savedRoom = localStorage.getItem('poker_current_room');
       const savedName = localStorage.getItem('poker_player_name');
 
