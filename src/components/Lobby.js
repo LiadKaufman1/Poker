@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { generateRoomCode } from '../utils/settlementLogic';
+import StatsDashboard from './StatsDashboard';
 
 const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket }) => {
   const [roomCode, setRoomCode] = useState(initialRoomCode || '');
   const [playerName, setPlayerName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   // עדכון קוד החדר אם הוא מגיע ב-props (מה-URL)
   React.useEffect(() => {
@@ -50,8 +52,17 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
     socket.emit('login-google', credentialResponse.credential);
   };
 
+  // Safe win rate calc
+  const winRate = user && user.stats.gamesPlayed > 0
+    ? Math.round(((user.stats.wins || 0) / user.stats.gamesPlayed) * 100)
+    : 0;
+
   return (
     <div className="min-h-screen text-white p-4">
+      {showStats && user && (
+        <StatsDashboard user={user} onClose={() => setShowStats(false)} />
+      )}
+
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-poker-green-400 mb-2 drop-shadow-lg text-center">
@@ -87,11 +98,24 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img src={user.picture} alt={user.name} className="w-12 h-12 rounded-full border-2 border-poker-green-500" />
+                <div
+                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setShowStats(true)}
+                >
+                  <div className="relative">
+                    <img src={user.picture} alt={user.name} className="w-12 h-12 rounded-full border-2 border-poker-green-500" />
+                    <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-gray-900">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                      </svg>
+                    </div>
+                  </div>
                   <div className="text-right">
-                    <h3 className="font-bold text-white">{user.name}</h3>
-                    <p className="text-xs text-green-400">מחובר</p>
+                    <h3 className="font-bold text-white flex items-center gap-2">
+                      {user.name}
+                      <span className="text-[10px] bg-gray-700 px-1.5 rounded text-gray-300">לחץ לסטטיסטיקה</span>
+                    </h3>
+                    <p className="text-xs text-green-400">Win Rate: {winRate}%</p>
                   </div>
                 </div>
                 <div className="text-left rtl:text-right bg-gray-900/80 p-2 rounded-lg border border-gray-700 min-w-[100px]">

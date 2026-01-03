@@ -41,8 +41,22 @@ const UserSchema = new mongoose.Schema({
   stats: {
     totalProfit: { type: Number, default: 0 },
     gamesPlayed: { type: Number, default: 0 },
+    wins: { type: Number, default: 0 },
+    bestSession: { type: Number, default: -Infinity },
+    worstSession: { type: Number, default: Infinity },
+    totalBuyInsAmount: { type: Number, default: 0 },
+    totalRebuysCount: { type: Number, default: 0 },
+    currentStreak: { type: Number, default: 0 }, // Positive for win streak, negative for loss
     lastPlayed: Date
-  }
+  },
+  history: [{
+    date: { type: Date, default: Date.now },
+    profit: Number,
+    buyIn: Number,
+    cashOut: Number,
+    rebuysCount: Number,
+    roomCode: String
+  }]
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -128,6 +142,7 @@ io.on('connection', (socket) => {
       name: user.name,
       picture: user.picture,
       stats: user.stats,
+      history: user.history, // Send full history
       sessionToken: user.sessionToken
     };
     console.log('Sending login-success to socket:', socket.id);
@@ -342,19 +357,49 @@ io.on('connection', (socket) => {
           const netProfit = cashOutShekels - totalBuyIn;
 
           try {
-            await User.updateOne(
-              { googleId: player.googleId },
-              {
-                $inc: {
-                  "stats.totalProfit": netProfit,
-                  "stats.gamesPlayed": 1
-                },
-                $set: {
-                  "stats.lastPlayed": new Date()
-                }
+            const user = await User.findOne({ googleId: player.googleId });
+
+            if (user) {
+              // 1. Update Basic Stats
+              user.stats.totalProfit += netProfit;
+              user.stats.gamesPlayed += 1;
+              user.stats.lastPlayed = new Date();
+              user.stats.totalBuyInsAmount = (user.stats.totalBuyInsAmount || 0) + totalBuyIn;
+              user.stats.totalRebuysCount = (user.stats.totalRebuysCount || 0) + (player.buyIns.length - 1);
+
+              // 2. Win/Loss Logic
+              if (netProfit > 0) {
+                user.stats.wins = (user.stats.wins || 0) + 1;
+                // Streak Logic
+                if (user.stats.currentStreak >= 0) user.stats.currentStreak++;
+                else user.stats.currentStreak = 1;
+              } else if (netProfit < 0) {
+                // Streak Logic
+                if (user.stats.currentStreak <= 0) user.stats.currentStreak--;
+                else user.stats.currentStreak = -1;
               }
-            );
-            console.log(`Stats saved for ${player.name}: Profit ${netProfit}`);
+
+              // 3. Best/Worst Session (Initialize if Infinity/-Infinity causes issues on first run, but default schema handles it mostly)
+              // We need to handle the case where default might be stored as null in old docs
+              const currentBest = user.stats.bestSession === -Infinity ? -9999999 : (user.stats.bestSession || -9999999);
+              const currentWorst = user.stats.worstSession === Infinity ? 9999999 : (user.stats.worstSession || 9999999);
+
+              if (netProfit > currentBest) user.stats.bestSession = netProfit;
+              if (netProfit < currentWorst) user.stats.worstSession = netProfit;
+
+              // 4. Push to History
+              user.history.push({
+                date: new Date(),
+                profit: netProfit,
+                buyIn: totalBuyIn,
+                cashOut: cashOutShekels,
+                rebuysCount: Math.max(0, player.buyIns.length - 1),
+                roomCode: roomCode
+              });
+
+              await user.save();
+              console.log(`Deep Stats saved for ${player.name}: Profit ${netProfit}, Streak ${user.stats.currentStreak}`);
+            }
           } catch (err) {
             console.error(`Failed to save stats for ${player.name}:`, err);
           }
