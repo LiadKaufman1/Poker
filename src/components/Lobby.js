@@ -98,13 +98,7 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <div
-                  className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => {
-                    console.log('Stats clicked');
-                    setShowStats(true);
-                  }}
-                >
+                <div className="flex items-center gap-3">
                   <div className="relative">
                     <img src={user.picture} alt={user.name} className="w-12 h-12 rounded-full border-2 border-poker-green-500" />
                     <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-gray-900">
@@ -114,11 +108,16 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
                     </div>
                   </div>
                   <div className="text-right">
-                    <h3 className="font-bold text-white flex items-center gap-2">
-                      {user.name}
-                      <span className="text-[10px] bg-gray-700 px-1.5 rounded text-gray-300">לחץ לסטטיסטיקה</span>
-                    </h3>
-                    <p className="text-xs text-green-400">Win Rate: {winRate}%</p>
+                    <h3 className="font-bold text-white">{user.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-green-400">Win Rate: {winRate}%</p>
+                      <button
+                        onClick={() => setShowStats(true)}
+                        className="bg-gray-700 hover:bg-gray-600 text-[10px] px-2 py-0.5 rounded text-white transition-colors border border-gray-600 shadow-sm"
+                      >
+                        📊 פרופיל
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="text-left rtl:text-right bg-gray-900/80 p-2 rounded-lg border border-gray-700 min-w-[100px]">
