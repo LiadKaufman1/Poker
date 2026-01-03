@@ -36,6 +36,8 @@ const UserSchema = new mongoose.Schema({
   email: String,
   name: String,
   picture: String,
+  sessionToken: String,
+  sessionExpires: Date,
   stats: {
     totalProfit: { type: Number, default: 0 },
     gamesPlayed: { type: Number, default: 0 },
@@ -85,6 +87,52 @@ io.on('connection', (socket) => {
     totalRoomsCreated
   });
 
+  const handleLoginSuccess = async (user, socket) => {
+    // Generate new session token
+    const sessionToken = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+    const sessionExpires = new Date();
+    sessionExpires.setHours(sessionExpires.getHours() + 6); // 6 hours expiration
+
+    user.sessionToken = sessionToken;
+    user.sessionExpires = sessionExpires;
+    await user.save();
+
+    // Tag socket with user info for later stats tracking
+    socket.user = { _id: user._id, googleId: user.googleId, name: user.name };
+
+    // Send back profile and stats
+    const responseData = {
+      _id: user._id,
+      name: user.name,
+      picture: user.picture,
+      stats: user.stats,
+      sessionToken: user.sessionToken
+    };
+    console.log('Sending login-success to socket:', socket.id);
+    socket.emit('login-success', responseData);
+  };
+
+  // Session Login Handler
+  socket.on('login-session', async (token) => {
+    console.log('Received login-session event');
+    try {
+      const user = await User.findOne({
+        sessionToken: token,
+        sessionExpires: { $gt: new Date() } // Check if not expired
+      });
+
+      if (user) {
+        console.log('Session verified for:', user.name);
+        await handleLoginSuccess(user, socket);
+      } else {
+        console.log('Invalid or expired session token');
+        socket.emit('session-expired');
+      }
+    } catch (err) {
+      console.error('Database error during session login:', err);
+    }
+  });
+
   // Google Login Handler
   socket.on('login-google', async (token) => {
     console.log('Received login-google event');
@@ -109,18 +157,7 @@ io.on('connection', (socket) => {
           console.log('User updated:', name);
         }
 
-        // Tag socket with user info for later stats tracking
-        socket.user = { _id: user._id, googleId, name };
-
-        // Send back profile and stats
-        const responseData = {
-          _id: user._id,
-          name: user.name,
-          picture: user.picture,
-          stats: user.stats
-        };
-        console.log('Sending login-success to socket:', socket.id);
-        socket.emit('login-success', responseData);
+        await handleLoginSuccess(user, socket);
 
       } catch (err) {
         console.error('Database error during login:', err);
