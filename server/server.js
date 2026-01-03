@@ -76,7 +76,29 @@ function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Global Stats Schema
+const GlobalStatsSchema = new mongoose.Schema({
+  totalRoomsCreated: { type: Number, default: 0 }
+});
+const GlobalStats = mongoose.model('GlobalStats', GlobalStatsSchema);
+
 let totalRoomsCreated = 0;
+
+// Initialize stats from DB
+async function initStats() {
+  try {
+    let stats = await GlobalStats.findOne();
+    if (!stats) {
+      stats = new GlobalStats({ totalRoomsCreated: 0 });
+      await stats.save();
+    }
+    totalRoomsCreated = stats.totalRoomsCreated;
+    console.log('Stats initialized. Total rooms created:', totalRoomsCreated);
+  } catch (err) {
+    console.error('Error initializing stats:', err);
+  }
+}
+initStats();
 
 io.on('connection', (socket) => {
   console.log('שחקן התחבר:', socket.id);
@@ -197,7 +219,10 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
+    // Persist Increment
     totalRoomsCreated++;
+    GlobalStats.updateOne({}, { $inc: { totalRoomsCreated: 1 } }).exec()
+      .catch(err => console.error('Failed to increment global room stats:', err));
 
     // Broadcast stats update to EVERYONE
     io.emit('stats-update', {
