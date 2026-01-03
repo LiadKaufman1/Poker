@@ -193,11 +193,15 @@ io.on('connection', (socket) => {
 
   // יצירת חדר חדש
   socket.on('create-room', (playerName) => {
+    if (!socket.user) {
+      socket.emit('error', 'חובה להתחבר כדי ליצור חדר');
+      return;
+    }
+
     const roomCode = generateRoomCode();
     const adminSecret = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2); // Secret token
-
-    // Attach Google ID if user is logged in
-    const googleId = socket.user ? socket.user.googleId : null;
+    const googleId = socket.user.googleId;
+    const name = socket.user.name; // Use verified name from Google
 
     const room = {
       code: roomCode,
@@ -205,7 +209,7 @@ io.on('connection', (socket) => {
       adminSecret,
       players: [{
         id: socket.id,
-        name: playerName,
+        name: name,
         googleId, // Store Google ID
         buyIns: [],
         cashOut: undefined
@@ -232,7 +236,7 @@ io.on('connection', (socket) => {
 
     // Send secret ONLY to the creator
     socket.emit('room-created', { roomCode, room, adminSecret });
-    console.log(`חדר ${roomCode} נוצר על ידי ${playerName} (GoogleID: ${googleId})`);
+    console.log(`חדר ${roomCode} נוצר על ידי ${name} (GoogleID: ${googleId})`);
   });
 
   // הצטרפות לחדר
@@ -244,22 +248,27 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Attach Google ID if user is logged in
-    const googleId = socket.user ? socket.user.googleId : null;
+    if (!socket.user) {
+      // Allow re-join if adminSecret is provided (admin reclaiming room)
+      // OR if we implement a specific re-join logic. But for now, enforce login.
+      // Exception: If user is reconnecting with same session, they should be logged in via login-session
+      socket.emit('error', 'חובה להתחבר כדי להצטרף לחדר');
+      return;
+    }
+
+    const googleId = socket.user.googleId;
+    const name = socket.user.name;
 
     // בדיקה אם השחקן כבר קיים
-    const existingPlayer = room.players.find(p => p.name === playerName);
+    const existingPlayer = room.players.find(p => p.googleId === googleId); // Robust check by GoogleID
 
     if (existingPlayer) {
       existingPlayer.id = socket.id;
-      // Update Google ID if it was missing (e.g. late login)
-      if (!existingPlayer.googleId && googleId) {
-        existingPlayer.googleId = googleId;
-      }
+      existingPlayer.name = name; // Update name just in case
     } else {
       room.players.push({
         id: socket.id,
-        name: playerName,
+        name: name,
         googleId, // Store Google ID
         buyIns: [],
         cashOut: undefined
@@ -276,7 +285,7 @@ io.on('connection', (socket) => {
     socket.roomCode = roomCode;
 
     io.to(roomCode).emit('room-updated', room);
-    console.log(`${playerName} הצטרף לחדר ${roomCode} (GoogleID: ${googleId})`);
+    console.log(`${name} הצטרף לחדר ${roomCode} (GoogleID: ${googleId})`);
   });
 
   // עדכון שחקן

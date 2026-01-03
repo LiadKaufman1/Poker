@@ -108,57 +108,50 @@ const Lobby = ({ onJoinGame, onCreateGame, initialRoomCode, stats, user, socket 
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="card">
-            <label className="block text-sm font-medium mb-2">
-              שם השחקן
-            </label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              disabled={!!user}
-              className={`input-field ${user ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : ''}`}
-              placeholder="הכנס את שמך"
-              maxLength={20}
-            />
-          </div>
+        {user ? (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <button
+                onClick={handleCreateGame}
+                disabled={isCreating}
+                className="w-full bg-poker-green-600 hover:bg-poker-green-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg"
+              >
+                {isCreating ? 'יוצר משחק...' : 'צור משחק חדש'}
+              </button>
 
-          <div className="space-y-4">
-            <button
-              onClick={handleCreateGame}
-              disabled={isCreating}
-              className="w-full bg-poker-green-600 hover:bg-poker-green-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg"
-            >
-              {isCreating ? 'יוצר משחק...' : 'צור משחק חדש'}
-            </button>
+              <div className="text-center text-gray-300">
+                או
+              </div>
 
-            <div className="text-center text-gray-300">
-              או
+              <div className="card">
+                <label className="block text-sm font-medium mb-2">
+                  קוד חדר
+                </label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  className="input-field text-center text-lg tracking-wider"
+                  placeholder="ABCD12"
+                  maxLength={6}
+                />
+              </div>
+
+              <button
+                onClick={handleJoinGame}
+                className="w-full bg-gray-700/80 hover:bg-gray-600/80 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg backdrop-blur-sm"
+              >
+                הצטרף למשחק
+              </button>
             </div>
-
-            <div className="card">
-              <label className="block text-sm font-medium mb-2">
-                קוד חדר
-              </label>
-              <input
-                type="text"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                className="input-field text-center text-lg tracking-wider"
-                placeholder="ABCD12"
-                maxLength={6}
-              />
-            </div>
-
-            <button
-              onClick={handleJoinGame}
-              className="w-full bg-gray-700/80 hover:bg-gray-600/80 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors shadow-lg backdrop-blur-sm"
-            >
-              הצטרף למשחק
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="text-center p-8 bg-gray-800/50 rounded-xl border border-gray-700">
+            <p className="text-xl text-gray-300">
+              אנא התחבר כדי להתחיל לשחק
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-8 text-center space-y-4">
