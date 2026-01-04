@@ -90,6 +90,31 @@ function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+// Active Room Schema for Persistence
+const ActiveRoomSchema = new mongoose.Schema({
+  code: { type: String, unique: true },
+  adminId: String,
+  adminSecret: String,
+  createdAt: { type: Date, default: Date.now, expires: 43200 }, // Auto-delete after 12 hours (43200s)
+  players: [{
+    id: String, // socket id (will be outdated on restart, but name/googleId persist)
+    name: String,
+    googleId: String,
+    buyIns: [{
+      amount: Number,
+      time: { type: Date, default: Date.now }
+    }],
+    cashOut: Number
+  }],
+  gameSettings: {
+    chipRatio: {
+      shekel: { type: Number, default: 1 },
+      chips: { type: Number, default: 1 }
+    }
+  }
+});
+const ActiveRoom = mongoose.model('ActiveRoom', ActiveRoomSchema);
+
 // Global Stats Schema
 const GlobalStatsSchema = new mongoose.Schema({
   totalRoomsCreated: { type: Number, default: 0 }
@@ -98,9 +123,10 @@ const GlobalStats = mongoose.model('GlobalStats', GlobalStatsSchema);
 
 let totalRoomsCreated = 0;
 
-// Initialize stats from DB
-async function initStats() {
+// Initialize stats and Restore Rooms from DB
+async function initServer() {
   try {
+    // 1. Init Stats
     let stats = await GlobalStats.findOne();
     if (!stats) {
       stats = new GlobalStats({ totalRoomsCreated: 0 });
@@ -108,11 +134,23 @@ async function initStats() {
     }
     totalRoomsCreated = stats.totalRoomsCreated;
     console.log('Stats initialized. Total rooms created:', totalRoomsCreated);
+
+    // 2. Restore Active Rooms
+    const persistedRooms = await ActiveRoom.find({});
+    persistedRooms.forEach(doc => {
+      // Convert Mongoose doc to plain object for the Map
+      const room = doc.toObject();
+      // Reset socket IDs to null since they are invalid after restart
+      room.players.forEach(p => p.id = null);
+      rooms.set(room.code, room);
+    });
+    console.log(`Restored ${persistedRooms.length} active rooms from database.`);
+
   } catch (err) {
-    console.error('Error initializing stats:', err);
+    console.error('Error initializing server:', err);
   }
 }
-initStats();
+initServer();
 
 io.on('connection', (socket) => {
   console.log('שחקן התחבר:', socket.id);
@@ -207,7 +245,7 @@ io.on('connection', (socket) => {
   });
 
   // יצירת חדר חדש
-  socket.on('create-room', (playerName) => {
+  socket.on('create-room', async (playerName) => {
     if (!socket.user) {
       socket.emit('error', 'חובה להתחבר כדי ליצור חדר');
       return;
@@ -238,7 +276,15 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
-    // Persist Increment
+    // 1. Persist Active Room
+    try {
+      await ActiveRoom.create(room); // Save entire room object
+      console.log(`Room ${roomCode} persisted to DB.`);
+    } catch (err) {
+      console.error(`Failed to persist room ${roomCode}:`, err);
+    }
+
+    // 2. Persist Global Stats Increment
     totalRoomsCreated++;
     GlobalStats.updateOne({}, { $inc: { totalRoomsCreated: 1 } }).exec()
       .catch(err => console.error('Failed to increment global room stats:', err));
@@ -255,7 +301,7 @@ io.on('connection', (socket) => {
   });
 
   // הצטרפות לחדר
-  socket.on('join-room', ({ roomCode, playerName, adminSecret }) => {
+  socket.on('join-room', async ({ roomCode, playerName, adminSecret }) => {
     const room = rooms.get(roomCode);
 
     if (!room) {
@@ -264,9 +310,6 @@ io.on('connection', (socket) => {
     }
 
     if (!socket.user) {
-      // Allow re-join if adminSecret is provided (admin reclaiming room)
-      // OR if we implement a specific re-join logic. But for now, enforce login.
-      // Exception: If user is reconnecting with same session, they should be logged in via login-session
       socket.emit('error', 'חובה להתחבר כדי להצטרף לחדר');
       return;
     }
@@ -299,12 +342,25 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
     socket.roomCode = roomCode;
 
+    // Sync to DB
+    try {
+      if (adminSecret && room.adminSecret === adminSecret) {
+        await ActiveRoom.updateOne({ code: roomCode }, {
+          $set: { players: room.players, adminId: socket.id }
+        });
+      } else {
+        await ActiveRoom.updateOne({ code: roomCode }, { $set: { players: room.players } });
+      }
+    } catch (err) {
+      console.error(`Failed to sync join-room for ${roomCode}:`, err);
+    }
+
     io.to(roomCode).emit('room-updated', room);
     console.log(`${name} הצטרף לחדר ${roomCode} (GoogleID: ${googleId})`);
   });
 
   // עדכון שחקן
-  socket.on('update-player', ({ roomCode, playerName, updates }) => {
+  socket.on('update-player', async ({ roomCode, playerName, updates }) => {
     // Fallback to socket.roomCode if not provided (backwards compatibility)
     const code = roomCode || socket.roomCode;
     console.log(`Update player request: Room ${code}, Player ${playerName}`);
@@ -315,6 +371,14 @@ io.on('connection', (socket) => {
       const player = room.players.find(p => p.name === playerName);
       if (player) {
         Object.assign(player, updates);
+
+        // Sync to DB
+        try {
+          await ActiveRoom.updateOne({ code: code }, { $set: { players: room.players } });
+        } catch (err) {
+          console.error(`Failed to sync update-player for ${code}:`, err);
+        }
+
         io.to(code).emit('room-updated', room);
         console.log(`Player ${playerName} updated in room ${code}`);
       } else {
@@ -327,12 +391,20 @@ io.on('connection', (socket) => {
   });
 
   // עדכון הגדרות משחק
-  socket.on('update-game-settings', ({ roomCode, newSettings }) => {
+  socket.on('update-game-settings', async ({ roomCode, newSettings }) => {
     const code = roomCode || socket.roomCode;
     const room = rooms.get(code);
 
     if (room) {
       Object.assign(room.gameSettings, newSettings);
+
+      // Sync to DB
+      try {
+        await ActiveRoom.updateOne({ code: code }, { $set: { gameSettings: room.gameSettings } });
+      } catch (err) {
+        console.error(`Failed to sync settings for ${code}:`, err);
+      }
+
       io.to(code).emit('room-updated', room);
     } else {
       socket.emit('room-closed'); // Force client to leave zombie room
@@ -421,6 +493,15 @@ io.on('connection', (socket) => {
       }
 
       rooms.delete(roomCode);
+
+      // Delete from DB
+      try {
+        await ActiveRoom.deleteOne({ code: roomCode });
+        console.log(`Room ${roomCode} removed from DB.`);
+      } catch (err) {
+        console.error(`Failed to delete room ${roomCode} from DB:`, err);
+      }
+
       console.log(`Room ${roomCode} closed by admin`);
 
       io.emit('stats-update', {
@@ -431,7 +512,7 @@ io.on('connection', (socket) => {
   });
 
   // עזיבת שחקן (לא מנהל)
-  socket.on('leave-room', () => {
+  socket.on('leave-room', async () => {
     const roomCode = socket.roomCode;
     const room = rooms.get(roomCode);
 
@@ -444,11 +525,23 @@ io.on('connection', (socket) => {
 
       if (room.players.length === 0) {
         rooms.delete(roomCode);
+
+        // Remove from DB if empty
+        try {
+          await ActiveRoom.deleteOne({ code: roomCode });
+          console.log(`Empty Room ${roomCode} removed from DB.`);
+        } catch (err) { /* ignore */ }
+
         io.emit('stats-update', {
           activeRooms: rooms.size,
           totalRoomsCreated
         });
       } else {
+        // Sync Removal
+        try {
+          await ActiveRoom.updateOne({ code: roomCode }, { $set: { players: room.players } });
+        } catch (err) { /* ignore */ }
+
         io.to(roomCode).emit('room-updated', room);
       }
     }
